@@ -1,0 +1,68 @@
+# Model-routing config (sanitized excerpt of the real configuration)
+# -----------------------------------------------------------------
+# Each agent ROLE resolves to a model via an internal alias, and a cost-aware
+# router (applied before each call) can swap to a cheaper model for routine work.
+# On failure (rate-limit / 5xx / timeout) the request falls through an ordered
+# chain so one provider's outage degrades gracefully instead of dropping work.
+#
+# Model IDs and the fallback chain below are real (OpenRouter-hosted, plus a
+# self-hosted local model as the final tier). Secrets, endpoints, API keys, and
+# the full 8-role roster are omitted — this shows 4 of 8 roles as an illustration.
+#
+# Model IDs use the internal "openrouter/<provider>/<model>" prefix the agent
+# layer routes on; the raw OpenRouter slug is the suffix (e.g. "minimax/minimax-m2.5").
+# The fallback chain is shown flat at the router level for brevity; the real
+# config defines a per-role primary + ordered chain (see README §4).
+
+router:
+  # A cheaper "downgrade" tier handles routine/low-stakes calls; the router
+  # escalates to a role's primary only when the task warrants it.
+  cost_downgrade_model: openrouter/google/gemini-2.5-flash-lite
+  # Ordered fallback applied on a failed call, after retries on the primary:
+  fallback_chain:
+    - openrouter/nvidia/nemotron-3-super-120b-a12b   # cross-provider backstop
+    - openrouter/x-ai/grok-3-mini                     # final hosted fallback
+    - ollama_chat/llama3.3                            # self-hosted, last resort
+  retries_per_model: 2
+  timeout_seconds: 60
+
+roles:                       # 4 of 8 shown
+  operator:                  # plans + routes work; latency-sensitive, deterministic
+    model: openrouter/minimax/minimax-m2.5
+    temperature: 0.15
+    max_output_tokens: 8192
+
+  coder:                     # writes/debugs code
+    model: openrouter/qwen/qwen3-coder-next
+    temperature: 0.25
+    max_output_tokens: 16384
+
+  researcher:                # retrieval-heavy synthesis
+    model: openrouter/deepseek/deepseek-v4-flash
+    temperature: 0.70
+    max_output_tokens: 8192
+
+  analyst:                   # structured analysis over data
+    model: openrouter/qwen/qwen3-235b-a22b-2507
+    temperature: 0.40
+    max_output_tokens: 8192
+
+budget:
+  # Every call is metered before dispatch. The hard ceiling is MONTHLY; the
+  # daily figure is a rate-alarm only and never blocks (interactive work must
+  # not stall mid-month). The router prefers the downgrade tier and escalates
+  # to a role's primary only when task complexity and remaining budget warrant.
+  monthly_usd_cap: 172
+  track_per_request: true
+  daily_rate_alarm_usd: 7.5      # telemetry only — logs an alarm, does NOT block
+  # Tiered, complexity-aware degradation as monthly spend climbs:
+  thresholds:
+    optimize: 0.80    # >=80%: downgrade only trivial tasks
+    downgrade: 0.95   # >=95%: downgrade all but essential, high-complexity work
+    hard_cap: 1.00    # 100% : block non-essential calls
+  # Every interactive role is essential and is never hard-blocked — it degrades
+  # to a cheaper model instead. Only the background evaluator is blockable.
+  essential_roles: [operator, coder, researcher, analyst, productivity, reviewer]
+  on_exceed:
+    essential: degrade        # fall through to progressively cheaper models
+    non_essential: block      # background evaluator only

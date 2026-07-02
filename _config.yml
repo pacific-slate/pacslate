@@ -1,0 +1,11 @@
+title: Pacific Slate
+description: A self-hosted, model-agnostic personal AI system — the architecture and the design decisions behind it.
+
+# No theme — a minimal custom layout (_layouts/default.html), applied to the
+# README so the homepage stays utility-focused, fast, and on-brand. README.md
+# remains the single content source.
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

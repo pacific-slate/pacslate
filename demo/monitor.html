@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Pacific Slate // Monitor</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    /* Tokens mirror the shared design tokens (canvas.html :root). */
+    :root {
+      --sans: 'Geist', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --bg: #000000;
+      --ink: #FFFFFF;
+      --ink-soft: #C8C5D6;
+      --ink-faint: rgba(255,255,255,0.42);
+      --ink-ghost: rgba(255,255,255,0.28);
+      --rule: rgba(255,255,255,0.08);
+      --rule-strong: rgba(255,255,255,0.16);
+      --card-bg: rgba(9, 10, 14, 0.62);
+      --accent: #88F5C8;
+      --accent-2: #C9A8FF;
+      --accent-3: #FF9FCC;
+      --hot: #FF5C8D;
+      --amber: #FFB347;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+      font-family: var(--sans); overflow: hidden; }
+    #map { position: fixed; inset: 0; background: #000; z-index: 0; }
+
+    /* Dark map: dim CARTO tiles so the OLED canvas dominates, data sits on top. */
+    .leaflet-container { background: #000; }
+    .leaflet-tile { filter: brightness(0.55) saturate(0.6) contrast(1.05); }
+    .leaflet-control-attribution { background: rgba(0,0,0,0.5) !important;
+      color: var(--ink-ghost) !important; font-size: 9px; }
+    .leaflet-control-attribution a { color: var(--ink-faint) !important; }
+    .leaflet-bar a { background: var(--card-bg); color: var(--ink-soft);
+      border-bottom: 1px solid var(--rule); }
+
+    .hud-top {
+      position: fixed; top: 0; left: 0; z-index: 600;
+      padding: 14px 18px; display: flex; align-items: baseline; gap: 14px;
+      font-family: var(--mono); letter-spacing: 0.12em; font-size: 12px;
+      color: var(--ink-soft); text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(0,0,0,0.9);
+    }
+    .hud-top .mark { color: var(--ink); }
+    .hud-top .dot { color: var(--accent); }
+    .hud-top .clock { color: var(--ink-faint); letter-spacing: 0.08em; }
+
+    .rail {
+      position: fixed; top: 0; right: 0; z-index: 500;
+      width: 332px; max-width: 86vw; height: 100%;
+      padding: 52px 14px 14px; display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto;
+      background: linear-gradient(to left, rgba(0,0,0,0.78), rgba(0,0,0,0.0));
+      backdrop-filter: blur(1.5px);
+    }
+    .rail::-webkit-scrollbar { width: 6px; }
+    .rail::-webkit-scrollbar-thumb { background: var(--rule-strong); border-radius: 3px; }
+
+    /* Left rail = sovereign / private layer ("your world"). Mirrors .rail.
+       pointer-events:none on the container so the transparent top area lets the
+       map zoom control through; cards re-enable clicks. */
+    .rail-left {
+      position: fixed; top: 0; left: 0; z-index: 500;
+      width: 312px; max-width: 86vw; height: 100%;
+      padding: 92px 14px 56px; display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto; pointer-events: none;
+      background: linear-gradient(to right, rgba(0,0,0,0.80), rgba(0,0,0,0.0));
+      backdrop-filter: blur(1.5px);
+    }
+    .rail-left > * { pointer-events: auto; }
+    .rail-left::-webkit-scrollbar { width: 6px; }
+    .rail-left::-webkit-scrollbar-thumb { background: var(--rule-strong); border-radius: 3px; }
+    .person-sub { padding: 0 0 5px; }
+    .person-sub .k { color: var(--ink-faint); font-size: 11px; }
+
+    .card {
+      background: var(--card-bg); border: 1px solid var(--rule);
+      border-radius: 10px; padding: 12px 13px;
+    }
+    .card h2 {
+      margin: 0 0 9px; font-family: var(--mono); font-size: 10.5px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card h2 .n { font-size: 15px; color: var(--ink); letter-spacing: 0.02em; }
+
+    .row { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; padding: 5px 0; border-top: 1px solid var(--rule); font-size: 12px; }
+    .row:first-of-type { border-top: 0; }
+    .row .k { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    .row .v { font-family: var(--mono); color: var(--ink); white-space: nowrap; }
+    .row .sub { color: var(--ink-faint); font-family: var(--mono); font-size: 10.5px; }
+    a.row { text-decoration: none; }
+    a.row:hover .k { color: var(--ink); }
+
+    .pos { color: var(--accent); }
+    .neg { color: var(--hot); }
+    .muted { color: var(--ink-faint); }
+    .empty { color: var(--ink-ghost); font-family: var(--mono); font-size: 11px;
+      padding: 6px 0; }
+
+    .legend {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 600;
+      display: flex; gap: 14px; padding: 8px 12px;
+      background: var(--card-bg); border: 1px solid var(--rule); border-radius: 8px;
+      font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint);
+      letter-spacing: 0.06em; user-select: none;
+    }
+    .legend label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .legend .swatch { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .legend input { accent-color: var(--accent); }
+
+    .backlink {
+      margin-top: auto; text-align: center; padding: 9px;
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-faint); text-decoration: none;
+      border: 1px solid var(--rule); border-radius: 8px;
+    }
+    .backlink:hover { color: var(--accent); border-color: var(--rule-strong); }
+
+    .leaflet-popup-content-wrapper { background: #0b0c12; color: var(--ink-soft);
+      border: 1px solid var(--rule-strong); border-radius: 8px; }
+    .leaflet-popup-tip { background: #0b0c12; }
+    .leaflet-popup-content { font-family: var(--mono); font-size: 11px; margin: 9px 11px; }
+    .leaflet-popup-content b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <aside class="rail rail-left">
+    <section class="card" id="card-priorities">
+      <h2>Priorities <span class="n" id="p-gap-count">—</span></h2>
+      <div id="p-gaps"><div class="empty">loading…</div></div>
+    </section>
+    <section class="card" id="card-people">
+      <h2>Follow-ups <span class="n" id="p-ppl-count">—</span></h2>
+      <div id="p-people"><div class="empty">loading…</div></div>
+    </section>
+    <section class="card" id="card-signals">
+      <h2>Signals · 48h <span class="n" id="p-sig-count">—</span></h2>
+      <div id="p-signals"><div class="empty">loading…</div></div>
+    </section>
+  </aside>
+
+  <div class="hud-top">
+    <span class="mark">PACIFIC SLATE</span><span class="dot">//</span>
+    <span class="mark">MONITOR</span>
+    <span class="clock" id="clock">--:--:-- UTC</span>
+  </div>
+
+  <aside class="rail">
+    <section class="card" id="card-status">
+      <h2>Status <span class="n muted" id="status-state">live</span></h2>
+      <div class="row"><span class="k">Updated</span><span class="v" id="st-updated">—</span></div>
+      <div class="row"><span class="k">Sources</span><span class="sub">USGS · OpenSky · CoinGecko · Wire RSS</span></div>
+    </section>
+
+    <section class="card" id="card-seismic">
+      <h2>Seismic <span class="n" id="q-count">—</span></h2>
+      <div id="q-list"><div class="empty">loading…</div></div>
+    </section>
+
+    <section class="card" id="card-air">
+      <h2>Aircraft <span class="n" id="a-count">—</span></h2>
+      <div class="row"><span class="k">In view (CONUS)</span><span class="v" id="a-inview">—</span></div>
+      <div id="a-note" class="empty" style="display:none">feed via server — live in prod</div>
+    </section>
+
+    <section class="card" id="card-markets">
+      <h2>Markets <span class="n muted">usd</span></h2>
+      <div id="m-list"><div class="empty">loading…</div></div>
+    </section>
+
+    <section class="card" id="card-news">
+      <h2>Headlines <span class="n" id="n-count">—</span></h2>
+      <div id="n-list"><div class="empty">feed via server — live in prod</div></div>
+    </section>
+
+    <a class="backlink" href="canvas.html">↩ Chat canvas</a>
+  </aside>
+
+  <div class="legend">
+    <label><input type="checkbox" id="tg-quakes" checked /><span class="swatch" style="background:var(--amber)"></span>Quakes</label>
+    <label><input type="checkbox" id="tg-air" checked /><span class="swatch" style="background:var(--accent)"></span>Aircraft</label>
+  </div>
+
+    <!-- DEMO MODE: client-side sample-data shim, no backend -->
+  <script>
+/* ============================================================================
+   Pacific Slate — DEMO MODE (monitor)
+   Seismic (USGS) and headlines (HackerNews fallback) stay LIVE — public data,
+   no backend needed. This shim only serves the markets + aircraft layers and a
+   clearly-labeled SAMPLE sovereign layer so the "your world" rail isn't empty.
+   The fabricated names/items below are invented for demonstration. =========== */
+(function () {
+  "use strict";
+  if (/[?&]live\b/.test(location.search) && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return; // ?live escape hatch — localhost only; the public demo is always sample
+  window.__PSDEMO__ = true;
+
+  function jsonResp(obj) {
+    return Promise.resolve(new Response(JSON.stringify(obj), {
+      status: 200, headers: { "content-type": "application/json" },
+    }));
+  }
+
+  // ---- markets (sample) ----------------------------------------------------
+  var CRYPTO = { coins: [
+    { symbol: "btc", price: 67480, change24h: 1.8 },
+    { symbol: "eth", price: 3552, change24h: -0.6 },
+    { symbol: "sol", price: 172, change24h: 2.4 },
+  ] };
+
+  // ---- aircraft (sample) : a deterministic spread of points over CONUS ------
+  function aircraft() {
+    var pts = [], seed = 1337;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    var tags = ["DAL", "UAL", "AAL", "SWA", "JBU", "ASA", "FFT", "NKS"];
+    for (var i = 0; i < 140; i++) {
+      var lat = 26 + rnd() * 22;          // ~26–48 N
+      var lon = -123 + rnd() * 56;        // ~-123 to -67 W
+      pts.push({
+        lat: lat, lon: lon,
+        callsign: tags[i % tags.length] + (100 + Math.floor(rnd() * 899)),
+        icao24: "a" + (10000 + i).toString(16),
+        country: "United States",
+        alt: 800 + Math.floor(rnd() * 11000),
+        velocity: 120 + Math.floor(rnd() * 130),
+        on_ground: rnd() < 0.08,
+      });
+    }
+    return { aircraft: pts };
+  }
+
+  // ---- sovereign / private layer (SAMPLE — fabricated) ----------------------
+  var PRIVATE = {
+    counts: { gaps: 2, people: 2, signals: 2 },
+    gaps: ["No owner on the Q3 planning doc", "Domain renewal in 3 days"],
+    people: [
+      { name: "Jordan V.", channel: "email", text: "Re: design review — needs your sign-off" },
+      { name: "Priya N.", channel: "sms", text: "Confirmed for Thursday" },
+    ],
+    signals: [
+      { text: "New open-weight model trending on HN", source: "hn" },
+      { text: "Routing cost down ~6% week-over-week", source: "cost-tracker" },
+    ],
+  };
+
+  var realFetch = window.fetch ? window.fetch.bind(window) : null;
+
+  // Live HackerNews, returned in the server's {headlines:[...]} shape so the
+  // monitor takes its normal success path — no console 404 from the absent
+  // backend, headlines still live. (Seismic stays live too.)
+  function liveHeadlines() {
+    if (!realFetch) return jsonResp({ headlines: [] });
+    return realFetch("https://hacker-news.firebaseio.com/v0/topstories.json", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (ids) {
+        return Promise.all((ids || []).slice(0, 8).map(function (id) {
+          return realFetch("https://hacker-news.firebaseio.com/v0/item/" + id + ".json")
+            .then(function (rr) { return rr.json(); }).catch(function () { return null; });
+        }));
+      })
+      .then(function (items) {
+        var headlines = (items || []).filter(function (it) { return it && it.title; }).slice(0, 7)
+          .map(function (it) { return { title: it.title, url: it.url || ("https://news.ycombinator.com/item?id=" + it.id), source: "HN" }; });
+        return jsonResp({ headlines: headlines });
+      })
+      .catch(function () { return jsonResp({ headlines: [] }); });
+  }
+
+  window.fetch = function (url, opts) {
+    var u = String(url || "");
+    try {
+      if (u.indexOf("/api/feeds/crypto") > -1) return jsonResp(CRYPTO);
+      if (u.indexOf("/api/feeds/aircraft") > -1) return jsonResp(aircraft());
+      if (u.indexOf("/api/feeds/private") > -1) return jsonResp(PRIVATE);
+      if (u.indexOf("/api/feeds/headlines") > -1) return liveHeadlines();
+    } catch (e) {}
+    return realFetch ? realFetch(url, opts) : Promise.reject(new Error("no fetch"));
+  };
+
+  // ---- badges --------------------------------------------------------------
+  function addBadges() {
+    if (!document.getElementById("ps-demo-badge")) {
+      var b = document.createElement("div");
+      b.id = "ps-demo-badge";
+      b.textContent = "DEMO · sample data";
+      b.style.cssText = [
+        "position:fixed", "z-index:9999", "bottom:48px", "left:50%",
+        "transform:translateX(-50%)", "padding:6px 12px",
+        "font-family:'JetBrains Mono',ui-monospace,monospace", "font-size:10.5px",
+        "letter-spacing:0.14em", "text-transform:uppercase",
+        "color:rgba(255,255,255,0.55)", "background:rgba(9,10,14,0.7)",
+        "border:1px solid rgba(255,255,255,0.14)", "border-radius:8px",
+        "backdrop-filter:blur(4px)", "pointer-events:none", "user-select:none",
+      ].join(";");
+      document.body.appendChild(b);
+    }
+    // Tag the sovereign rail header so the private layer reads as sample data.
+    var gapCount = document.getElementById("p-gap-count");
+    if (gapCount) {
+      var h = gapCount.closest("section") ? gapCount.closest("section").querySelector("h2") : null;
+    }
+    var ppl = document.getElementById("card-people");
+    var pri = document.getElementById("card-priorities");
+    [pri, ppl, document.getElementById("card-signals")].forEach(function (sec) {
+      if (sec && !sec.dataset.sampled) {
+        sec.dataset.sampled = "1";
+        var tag = document.createElement("span");
+        tag.textContent = " sample";
+        tag.style.cssText = "color:rgba(255,255,255,0.28);font-size:9px;letter-spacing:0.12em;";
+        var h2 = sec.querySelector("h2");
+        if (h2) h2.appendChild(tag);
+      }
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { setTimeout(addBadges, 200); });
+  } else { setTimeout(addBadges, 200); }
+})();
+
+  </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    "use strict";
+    const fmt = new Intl.NumberFormat("en-US");
+    const $ = (id) => document.getElementById(id);
+
+    // Feed data is semi-trusted (public APIs) — escape before injecting into HTML
+    // and validate URL schemes to block stored-XSS / javascript: URIs.
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const safeUrl = (u) => {
+      try {
+        const x = new URL(u, location.origin);
+        return (x.protocol === "http:" || x.protocol === "https:") ? x.href : "#";
+      } catch { return "#"; }
+    };
+
+    // ---- Map ----------------------------------------------------------------
+    const map = L.map("map", { zoomControl: true, attributionControl: true,
+      worldCopyJump: true }).setView([34.5, -96], 4);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
+      subdomains: "abcd", maxZoom: 19,
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+    }).addTo(map);
+
+    const quakeLayer = L.layerGroup().addTo(map);
+    const airLayer = L.layerGroup().addTo(map);
+    $("tg-quakes").addEventListener("change", (e) =>
+      e.target.checked ? quakeLayer.addTo(map) : map.removeLayer(quakeLayer));
+    $("tg-air").addEventListener("change", (e) =>
+      e.target.checked ? airLayer.addTo(map) : map.removeLayer(airLayer));
+
+    // ---- Helpers ------------------------------------------------------------
+    function magColor(m) {
+      if (m == null) return "var(--ink-faint)";
+      if (m >= 6) return "#FF5C8D";
+      if (m >= 4.5) return "#FF9FCC";
+      if (m >= 3) return "#FFB347";
+      return "#88F5C8";
+    }
+    function ago(ms) {
+      if (!ms) return "—";
+      const s = Math.max(0, (Date.now() - ms) / 1000);
+      if (s < 60) return Math.floor(s) + "s";
+      if (s < 3600) return Math.floor(s / 60) + "m";
+      if (s < 86400) return Math.floor(s / 3600) + "h";
+      return Math.floor(s / 86400) + "d";
+    }
+    function setUpdated() {
+      const d = new Date();
+      $("st-updated").textContent = d.toISOString().slice(11, 19) + "Z";
+    }
+    function clock() {
+      $("clock").textContent = new Date().toISOString().slice(11, 19) + " UTC";
+    }
+    setInterval(clock, 1000); clock();
+
+    // ---- Seismic (USGS, client-direct — CORS ok) ----------------------------
+    async function loadSeismic() {
+      try {
+        const r = await fetch(
+          "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+          { cache: "no-store" });
+        const data = await r.json();
+        const feats = (data.features || []).map((f) => ({
+          mag: f.properties.mag, place: f.properties.place,
+          time: f.properties.time, url: f.properties.url,
+          lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
+        })).sort((a, b) => (b.time || 0) - (a.time || 0));
+
+        quakeLayer.clearLayers();
+        for (const q of feats) {
+          if (q.lat == null || q.lon == null) continue;
+          L.circleMarker([q.lat, q.lon], {
+            radius: Math.max(3, (q.mag || 1) * 2.2),
+            color: magColor(q.mag), weight: 1.2,
+            fillColor: magColor(q.mag), fillOpacity: 0.22,
+          }).bindPopup(
+            `<b>M ${q.mag?.toFixed(1) ?? "?"}</b> &nbsp;${esc(q.place || "")}<br>` +
+            `${ago(q.time)} ago`
+          ).addTo(quakeLayer);
+        }
+        $("q-count").textContent = fmt.format(feats.length);
+        const top = feats.slice(0, 6).map((q) =>
+          `<a class="row" href="${safeUrl(q.url)}" target="_blank" rel="noopener">` +
+          `<span class="k">${esc(q.place || "—")}</span>` +
+          `<span class="v" style="color:${magColor(q.mag)}">M${q.mag?.toFixed(1) ?? "?"} ` +
+          `<span class="sub">${ago(q.time)}</span></span></a>`).join("");
+        $("q-list").innerHTML = top || '<div class="empty">none in window</div>';
+        setUpdated();
+      } catch (e) {
+        $("q-count").textContent = "×";
+        $("q-list").innerHTML = '<div class="empty">USGS unavailable</div>';
+      }
+    }
+
+    // ---- Markets (server-cached /api/feeds/crypto — polite to CoinGecko) -----
+    async function loadMarkets() {
+      try {
+        const r = await fetch("/api/feeds/crypto?ids=bitcoin,ethereum,solana", { cache: "no-store" });
+        if (!r.ok) throw new Error(String(r.status));
+        const coins = (await r.json()).coins || [];
+        if (!coins.length) throw new Error("empty");
+        $("m-list").innerHTML = coins.map((c) => {
+          const ch = c.change24h ?? 0;
+          const cls = ch >= 0 ? "pos" : "neg";
+          const sign = ch >= 0 ? "+" : "";
+          return `<div class="row"><span class="k">${esc((c.symbol || "").toUpperCase())}</span>` +
+            `<span class="v">$${fmt.format(Math.round(c.price || 0))} ` +
+            `<span class="${cls}">${sign}${ch.toFixed(1)}%</span></span></div>`;
+        }).join("");
+      } catch (e) {
+        $("m-list").innerHTML = '<div class="empty">feed via server — live in prod</div>';
+      }
+    }
+
+    // ---- Aircraft (OpenSky via server proxy — prod) -------------------------
+    async function loadAircraft() {
+      try {
+        const r = await fetch("/api/feeds/aircraft", { cache: "no-store" });
+        if (!r.ok) throw new Error(String(r.status));
+        const data = await r.json();
+        const ac = (data.aircraft || []);
+        airLayer.clearLayers();
+        for (const a of ac.slice(0, 500)) {
+          L.circleMarker([a.lat, a.lon], {
+            radius: 2.4, color: "var(--accent)", weight: 0,
+            fillColor: "#88F5C8", fillOpacity: a.on_ground ? 0.25 : 0.8,
+          }).bindPopup(
+            `<b>${esc(a.callsign || a.icao24)}</b><br>` +
+            `${esc(a.country || "")}<br>` +
+            `alt ${a.alt != null ? Math.round(a.alt) + "m" : "—"} · ` +
+            `vel ${a.velocity != null ? Math.round(a.velocity) + "m/s" : "—"}`
+          ).addTo(airLayer);
+        }
+        $("a-count").textContent = fmt.format(ac.length);
+        $("a-inview").textContent = fmt.format(ac.length);
+        $("a-note").style.display = "none";
+      } catch (e) {
+        $("a-count").textContent = "—";
+        $("a-inview").textContent = "—";
+        $("a-note").style.display = "block";
+      }
+    }
+
+    // ---- Headlines (wire RSS via server: BBC/Al Jazeera/Google; HN fallback) -
+    async function loadNews() {
+      try {
+        const r = await fetch("/api/feeds/headlines", { cache: "no-store" });
+        if (r.ok) {
+          const items = ((await r.json()).headlines || []).slice(0, 7);
+          if (items.length) {
+            $("n-count").textContent = items.length;
+            $("n-list").innerHTML = items.map((a) =>
+              `<a class="row" href="${safeUrl(a.url)}" target="_blank" rel="noopener">` +
+              `<span class="k">${esc(a.title)}</span><span class="sub">${esc(a.source || "")}</span></a>`).join("");
+            return;
+          }
+        }
+        throw new Error("rss unavailable");
+      } catch (e) {
+        // Fallback: HackerNews client-direct (renders without the backend / locally).
+        try {
+          const ids = ((await (await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", { cache: "no-store" })).json()) || []).slice(0, 8);
+          const items = (await Promise.all(ids.map((id) =>
+            fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then((rr) => rr.json()).catch(() => null))))
+            .filter((it) => it && it.title).slice(0, 6);
+          if (!items.length) throw new Error("empty");
+          $("n-count").textContent = items.length;
+          $("n-list").innerHTML = items.map((a) =>
+            `<a class="row" href="${safeUrl(a.url || ("https://news.ycombinator.com/item?id=" + a.id))}" target="_blank" rel="noopener">` +
+            `<span class="k">${esc(a.title)}</span><span class="sub">HN</span></a>`).join("");
+        } catch (e2) {
+          $("n-count").textContent = "—";
+          $("n-list").innerHTML = '<div class="empty">headlines unavailable</div>';
+        }
+      }
+    }
+
+    // ---- Sovereign / private layer (authed via proxy -> cognitive-api) ------
+    async function loadPrivate() {
+      try {
+        const r = await fetch("/api/feeds/private", { cache: "no-store" });
+        if (!r.ok) throw new Error(String(r.status));
+        const d = await r.json();
+        const gaps = d.gaps || [];
+        $("p-gap-count").textContent = (d.counts && d.counts.gaps != null) ? d.counts.gaps : gaps.length;
+        $("p-gaps").innerHTML = gaps.length
+          ? gaps.map((g) => `<div class="row"><span class="k">${esc(g)}</span></div>`).join("")
+          : '<div class="empty">none open</div>';
+        const ppl = d.people || [];
+        $("p-ppl-count").textContent = (d.counts && d.counts.people != null) ? d.counts.people : ppl.length;
+        $("p-people").innerHTML = ppl.length
+          ? ppl.map((p) =>
+              `<div class="row"><span class="k" style="color:var(--accent-2)">${esc(p.name)}</span>` +
+              `<span class="sub">${esc(p.channel || "")}</span></div>` +
+              `<div class="person-sub"><span class="k">${esc(p.text || "")}</span></div>`).join("")
+          : '<div class="empty">quiet</div>';
+        const sig = d.signals || [];
+        $("p-sig-count").textContent = (d.counts && d.counts.signals != null) ? d.counts.signals : sig.length;
+        $("p-signals").innerHTML = sig.length
+          ? sig.map((s) =>
+              `<div class="row"><span class="k">${esc(s.text || "")}</span>` +
+              `<span class="sub">${esc(s.source || "")}</span></div>`).join("")
+          : '<div class="empty">none</div>';
+      } catch (e) {
+        $("p-gap-count").textContent = "—";
+        $("p-ppl-count").textContent = "—";
+        $("p-sig-count").textContent = "—";
+        $("p-gaps").innerHTML = '<div class="empty">live in prod (authed)</div>';
+        $("p-people").innerHTML = "";
+        $("p-signals").innerHTML = "";
+      }
+    }
+
+    // ---- Refresh loops ------------------------------------------------------
+    loadSeismic(); loadMarkets(); loadAircraft(); loadNews(); loadPrivate();
+    setInterval(loadSeismic, 60_000);
+    setInterval(loadAircraft, 30_000);
+    setInterval(loadMarkets, 120_000);
+    setInterval(loadNews, 300_000);
+    setInterval(loadPrivate, 90_000);
+  </script>
+</body>
+</html>

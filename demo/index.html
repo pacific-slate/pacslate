@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pacific Slate // Live Demo (sample data)</title>
+  <meta name="description" content="Interactive demo of the Pacific Slate multi-agent AI platform — the real UI running on fabricated sample data. No backend, no live deployment." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23000'/><circle cx='32' cy='32' r='10' fill='%2388F5C8'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@200..800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sans: 'Geist', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --bg: #000; --ink: #fff; --ink-soft: #C8C5D6; --ink-faint: rgba(255,255,255,0.42);
+      --rule: rgba(255,255,255,0.10); --rule-strong: rgba(255,255,255,0.18);
+      --accent: #88F5C8;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+      font-family: var(--sans); overflow: hidden; }
+    .bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 46px; z-index: 10;
+      display: flex; align-items: center; gap: 16px; padding: 0 14px;
+      background: rgba(6,7,10,0.92); border-bottom: 1px solid var(--rule);
+      backdrop-filter: blur(8px);
+    }
+    .mark { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+    .mark .dot { color: var(--accent); }
+    .sample { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--ink-faint); border: 1px solid var(--rule);
+      border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+    .tabs { display: flex; gap: 4px; margin-left: 6px; }
+    .tab {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+      color: var(--ink-soft); background: transparent; border: 1px solid transparent;
+      border-radius: 7px; padding: 6px 13px; cursor: pointer; text-transform: lowercase;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active { color: var(--bg); background: var(--accent); border-color: var(--accent);
+      font-weight: 600; }
+    .spacer { flex: 1; }
+    .lnk { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+      color: var(--ink-faint); text-decoration: none; white-space: nowrap; padding: 5px 8px;
+      border: 1px solid var(--rule); border-radius: 7px; }
+    .lnk:hover { color: var(--accent); border-color: var(--rule-strong); }
+    .frame-wrap { position: fixed; top: 46px; left: 0; right: 0; bottom: 0; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+    /* On mobile, drop the wordmark + GitHub link but KEEP the sample-data
+       disclosure pill visible — it is the most important label. */
+    @media (max-width: 640px) {
+      .mark { display: none; }
+      .lnk.gh { display: none; }
+      .sample { font-size: 9px; padding: 3px 6px; }
+    }
+    /* Mobile gate: the canvas is a desktop spatial UI (drag-and-drop result
+       cards need a pointer + room), so on small screens we replace the iframe
+       with a static preview + an "open on desktop" message instead of a broken
+       layout — and the iframe is never loaded. */
+    #mobileGate { display: none; }
+    @media (max-width: 720px) {
+      html, body { overflow: auto; height: auto; }
+      .bar { position: static; height: auto; padding: 9px 14px; flex-wrap: wrap; gap: 10px; }
+      .tabs { display: none; }
+      .frame-wrap { display: none; }
+      #mobileGate { display: block; max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
+      .mg-h { font-size: 21px; line-height: 1.2; margin: 4px 0 12px; letter-spacing: -0.01em; }
+      .mg-p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.6; margin: 0 0 12px; }
+      .mg-p strong { color: var(--ink); }
+      .mg-fig { margin: 20px 0; }
+      .mg-fig img { width: 100%; border: 1px solid var(--rule); border-radius: 10px; display: block; }
+      .mg-fig figcaption { font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+        line-height: 1.5; margin-top: 7px; }
+      .mg-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 10px; }
+      .mg-link { font-family: var(--mono); font-size: 12px; color: var(--accent);
+        text-decoration: none; border: 1px solid var(--rule-strong); border-radius: 8px;
+        padding: 10px 14px; }
+      .mg-link.muted { color: var(--ink-soft); }
+      .mg-foot { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+        text-transform: uppercase; color: var(--ink-faint); margin-top: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <span class="mark">PACIFIC&nbsp;SLATE <span class="dot">//</span> DEMO</span>
+    <span class="sample">sample data · no backend</span>
+    <div class="tabs">
+      <button class="tab active" data-src="canvas.html" id="tab-canvas">canvas</button>
+      <button class="tab" data-src="monitor.html" id="tab-monitor">monitor</button>
+    </div>
+    <span class="spacer"></span>
+    <a class="lnk gh" href="https://github.com/pacific-slate/pacslate" target="_blank" rel="noopener">view source</a>
+    <a class="lnk" href="/">↩ pacslate.com</a>
+  </div>
+  <div class="frame-wrap">
+    <iframe id="frame" src="canvas.html" title="Pacific Slate demo"></iframe>
+  </div>
+  <div id="mobileGate" aria-label="Pacific Slate demo — desktop recommended">
+    <h1 class="mg-h">Pacific Slate — interactive demo</h1>
+    <p class="mg-p">The live demo is a <strong>desktop spatial canvas</strong>: you drag streaming result cards around a workspace as the agents answer. It needs a pointer and room to move, so it's built for a bigger screen.</p>
+    <p class="mg-p"><strong>Open this page on a desktop</strong> for the full interactive version — sample data, no backend. Here's what it looks like:</p>
+    <figure class="mg-fig">
+      <img src="../docs/demo-canvas-poster.jpg" loading="lazy" alt="The Pacific Slate chat canvas: the operator routes a prompt to specialist agents, which return movable result cards, each tagged with the model that served it and the call's cost." />
+      <figcaption>The canvas — the answer streams in as movable cards, each tagged with the model that served it and the cost.</figcaption>
+    </figure>
+    <figure class="mg-fig">
+      <img src="../docs/demo-monitor.png" loading="lazy" alt="The Pacific Slate situational-awareness monitor: a world map with live seismic markers, sample markets and aircraft, a public headline feed, and a clearly-labeled sample personal layer." />
+      <figcaption>The monitor — a world dashboard. USGS seismic and a public headline feed run live; markets, aircraft, and the personal layer are sample data.</figcaption>
+    </figure>
+    <div class="mg-links">
+      <a class="mg-link" href="/">↩ back to pacslate.com</a>
+      <a class="mg-link muted" href="canvas.html">try the live canvas anyway →</a>
+    </div>
+    <p class="mg-foot">sample data · no backend</p>
+  </div>
+  <script>
+    (function () {
+      var frame = document.getElementById("frame");
+      // The canvas is a desktop spatial UI; on small screens show the static
+      // preview gate instead, and never load the heavy iframe.
+      if (window.matchMedia && window.matchMedia("(max-width: 720px)").matches) {
+        if (frame) frame.src = "about:blank";
+        return;
+      }
+      var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+      tabs.forEach(function (t) {
+        t.addEventListener("click", function () {
+          if (t.classList.contains("active")) return;
+          tabs.forEach(function (x) { x.classList.remove("active"); });
+          t.classList.add("active");
+          frame.src = t.getAttribute("data-src");
+        });
+      });
+      // Deep-link support: /demo/#monitor opens the monitor tab.
+      if (location.hash === "#monitor") {
+        document.getElementById("tab-monitor").click();
+      }
+    })();
+  </script>
+</body>
+</html>

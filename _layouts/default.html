@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23000'/><circle cx='32' cy='32' r='10' fill='%2388F5C8'/></svg>">
+  <style>
+    :root{
+      --bg:#0b0c0e; --panel:#121419; --ink:#e7e8ea; --soft:#abb0b8; --faint:#6d7178;
+      --rule:rgba(255,255,255,0.10); --rule-strong:rgba(255,255,255,0.18); --accent:#6ee0ad;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--bg);color:var(--soft);font-family:var(--sans);
+      font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+    /* top nav */
+    nav.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;row-gap:10px;
+      padding:18px 0;border-bottom:1px solid var(--rule)}
+    nav.top .brand{font-family:var(--mono);font-size:12.5px;letter-spacing:.18em;
+      text-transform:uppercase;color:var(--ink);white-space:nowrap}
+    nav.top .brand .dot{color:var(--accent)}
+    nav.top .links{display:flex;gap:16px;font-family:var(--mono);font-size:12.5px}
+    nav.top a{color:var(--soft);text-decoration:none;border:0}
+    nav.top a:hover{color:var(--accent)}
+    /* "Copy page" split-button dropdown */
+    .copybox{position:relative;display:inline-flex;align-items:stretch}
+    .copybox button{font-family:var(--mono);font-size:12.5px;color:var(--accent);background:transparent;
+      border:1px solid var(--rule-strong);cursor:pointer;padding:3px 8px;line-height:1.4}
+    .copybox button:hover{border-color:var(--accent)}
+    .copybox .cp-main{border-radius:6px 0 0 6px;border-right:0}
+    .copybox .cp-tog{border-radius:0 6px 6px 0;padding:3px 6px}
+    .copybox .menu{position:absolute;right:0;top:calc(100% + 6px);min-width:190px;z-index:20;
+      background:var(--panel);border:1px solid var(--rule-strong);border-radius:8px;padding:5px;
+      display:none;flex-direction:column}
+    .copybox.open .menu{display:flex}
+    .copybox .menu a{font-family:var(--sans);font-size:13.5px;color:var(--soft);border:0;
+      padding:7px 10px;border-radius:6px;white-space:nowrap}
+    .copybox .menu a:hover{background:rgba(255,255,255,0.05);color:var(--ink)}
+    /* content */
+    main{padding:8px 0 16px}
+    h1,h2,h3,h4{color:var(--ink);font-weight:650;line-height:1.25;letter-spacing:-0.01em}
+    h1{font-size:32px;margin:32px 0 6px}
+    h1 + p{font-size:18px;color:var(--soft)}        /* tagline line under title */
+    h2{font-size:21px;margin:38px 0 12px}
+    h3{font-size:17px;margin:26px 0 8px}
+    p,li{color:var(--soft)}
+    strong{color:var(--ink);font-weight:650}
+    em{color:var(--soft)}
+    a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(110,224,173,0.28)}
+    a:hover{border-bottom-color:var(--accent)}
+    ul{padding-left:20px}
+    li{margin:5px 0}
+    hr{border:0;border-top:1px solid var(--rule);margin:30px 0}
+    blockquote{margin:18px 0;padding:12px 16px;border-left:2px solid var(--accent);
+      background:var(--panel);color:var(--soft);border-radius:0 8px 8px 0}
+    blockquote p{margin:0}
+    code{font-family:var(--mono);font-size:.86em;background:var(--panel);
+      padding:2px 6px;border-radius:5px;color:var(--ink)}
+    pre{background:var(--panel);border:1px solid var(--rule);border-radius:10px;
+      padding:16px;overflow:auto;font-size:13.5px;line-height:1.5}
+    pre code{background:none;padding:0;font-size:inherit}
+    img{max-width:100%;height:auto;display:block;margin:10px 0;
+      border:1px solid var(--rule);border-radius:10px}
+    main img{cursor:zoom-in}
+    /* click-to-enlarge lightbox (vector SVG stays crisp at any size) */
+    .lightbox{position:fixed;inset:0;z-index:60;display:none;overflow:auto;
+      background:rgba(8,9,11,0.95);padding:28px;cursor:zoom-out;-webkit-overflow-scrolling:touch}
+    .lightbox.open{display:block}
+    .lightbox img{display:block;margin:0 auto;width:min(1400px,94vw);max-width:none;
+      height:auto;cursor:zoom-out}
+    .lightbox .lb-x{position:fixed;top:12px;right:18px;color:var(--soft);
+      font-family:var(--mono);font-size:13px;letter-spacing:.04em}
+    table{border-collapse:collapse;width:100%;margin:16px 0;font-size:15px}
+    th,td{border:1px solid var(--rule);padding:8px 12px;text-align:left}
+    th{color:var(--ink);font-weight:650}
+    details{margin:10px 0;border:1px solid var(--rule);border-radius:8px;padding:8px 12px}
+    summary{cursor:pointer;color:var(--faint);font-family:var(--mono);font-size:13px}
+    footer{border-top:1px solid var(--rule);margin-top:48px;padding:22px 0 64px;
+      color:var(--faint);font-size:14px}
+    footer a{color:var(--soft)}
+    @media(max-width:600px){
+      body{font-size:16px}
+      .hide-sm{display:none}  /* on phones keep just: live demo + the Copy-page control */
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="top">
+      <span class="brand">Pacific&nbsp;Slate <span class="dot">//</span></span>
+      <span class="links">
+        <a href="/demo">live demo</a>
+        <a class="hide-sm" href="/demo/#monitor">monitor</a>
+        <a class="hide-sm" href="https://github.com/pacific-slate/pacslate">source</a>
+        <span class="copybox" id="copybox">
+          <button class="cp-main" id="cpCopy" title="Copy this page as Markdown">Copy&nbsp;page</button>
+          <button class="cp-tog" id="cpTog" aria-label="More options" aria-haspopup="true" aria-expanded="false">▾</button>
+          <div class="menu">
+            <a href="#" id="mCopy">Copy as Markdown</a>
+            <a href="https://raw.githubusercontent.com/pacific-slate/pacslate/main/README.md" id="mOpen" target="_blank" rel="noopener">Open Markdown</a>
+            <a href="#" id="mClaude" target="_blank" rel="noopener">Chat in Claude</a>
+            <a href="#" id="mGPT" target="_blank" rel="noopener">Open in ChatGPT</a>
+          </div>
+        </span>
+      </span>
+    </nav>
+    <main>
+      {{ content }}
+    </main>
+    <footer>
+      Built &amp; operated by Ryan Thompson · <a href="https://linkedin.com/in/thompson-rc">LinkedIn</a>
+    </footer>
+  </div>
+  <div class="lightbox" id="lightbox" aria-hidden="true"><span class="lb-x">✕ close (Esc)</span><img alt="Enlarged diagram"></div>
+  <script>
+    /* click any content image (the architecture diagram) to enlarge it */
+    (function(){
+      var lb=document.getElementById('lightbox'); if(!lb)return;
+      var lbImg=lb.querySelector('img');
+      function openLb(src,alt){lbImg.src=src;lbImg.alt=alt||'';lb.classList.add('open');lb.setAttribute('aria-hidden','false');}
+      function closeLb(){lb.classList.remove('open');lb.setAttribute('aria-hidden','true');lbImg.removeAttribute('src');}
+      Array.prototype.forEach.call(document.querySelectorAll('main img'),function(img){
+        img.addEventListener('click',function(){openLb(img.getAttribute('src'),img.alt);});
+      });
+      lb.addEventListener('click',closeLb);
+      document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();});
+    })();
+  </script>
+  <script>
+    /* "Copy page" dropdown — hands this page to whatever AI / coding tool the
+       reader uses: copy as Markdown, open the raw Markdown, or open a chat with
+       the page prefilled. The page's primary reader is an AI; make that easy. */
+    (function(){
+      var box=document.getElementById('copybox');
+      if(!box)return;
+      var RAW='https://raw.githubusercontent.com/pacific-slate/pacslate/main/README.md';
+      var PAGE=location.origin+location.pathname;
+      var p='Fetch and read this page, then tell me what stands out and what you would want to dig into: '+PAGE;
+      var q=encodeURIComponent(p);
+      var mClaude=document.getElementById('mClaude'), mGPT=document.getElementById('mGPT');
+      if(mClaude) mClaude.href='https://claude.ai/new?q='+q;
+      if(mGPT) mGPT.href='https://chatgpt.com/?q='+q;
+
+      var cpTog=document.getElementById('cpTog');
+      function flash(el,msg){if(!el)return;var o=el.textContent;el.textContent=msg;setTimeout(function(){el.textContent=o;},1500);}
+      function close(){box.classList.remove('open');if(cpTog)cpTog.setAttribute('aria-expanded','false');}
+      function writeClip(text){
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          return navigator.clipboard.writeText(text).then(function(){return true;},function(){return execCopy(text);});
+        }
+        return Promise.resolve(execCopy(text));
+      }
+      function execCopy(text){
+        try{var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+            document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');document.body.removeChild(ta);return ok;}
+        catch(e){return false;}
+      }
+      function copyMd(srcEl){
+        // Prefer the canonical Markdown source; fall back to the page's own text
+        // (works offline / before the repo is public), then to opening the raw file.
+        fetch(RAW).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;})
+          .then(function(md){
+            if(!md){var main=document.querySelector('main');md=main?main.innerText:document.body.innerText;}
+            return writeClip(md);
+          })
+          .then(function(ok){flash(srcEl,ok?'Copied ✓':'Copy failed');if(!ok)window.open(RAW,'_blank','noopener');});
+      }
+      var cpCopy=document.getElementById('cpCopy'), mCopy=document.getElementById('mCopy');
+      if(cpCopy) cpCopy.addEventListener('click',function(e){e.preventDefault();copyMd(cpCopy);});
+      if(mCopy) mCopy.addEventListener('click',function(e){e.preventDefault();copyMd(cpCopy);close();});
+      if(cpTog) cpTog.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        var open=box.classList.toggle('open');
+        cpTog.setAttribute('aria-expanded',open?'true':'false');
+      });
+      document.addEventListener('click',function(e){if(!box.contains(e.target))close();});
+      document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+      window.addEventListener('resize',close);
+    })();
+  </script>
+</body>
+</html>

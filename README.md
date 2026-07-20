@@ -218,6 +218,7 @@ Docker services across four segmented network tiers behind a Cloudflare Tunnel, 
 <details markdown="1">
 <summary><strong>Known limits</strong> · the trade-offs, stated plainly</summary>
 
+- **Built for one.** Single operator, single user, by design. The reliability and privilege patterns here are real mechanisms, but they operate at personal scale; nothing on this page claims enterprise load, multi-tenancy, or an adversarial threat model.
 - **One router in the path.** All hosted models are reached through a single gateway today, so a router outage is the shared dependency. Mitigated by pinning a workload to the local model, not eliminated.
 - **The demo is representative, not connected.** The real UI on sample data; it doesn't touch the production system.
 - **The semantic-memory layer is a hosted service.** The one cloud dependency in an otherwise local stack (swappable, and not the system of record).

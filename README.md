@@ -85,52 +85,27 @@ A request comes in → the **operator** decides which specialist should own it �
 
 *Click the diagram to enlarge.*
 
-<details markdown="1">
-<summary>Diagram source (Mermaid)</summary>
-
-```mermaid
-flowchart TD
-    U[User · Next.js frontend] -->|AG-UI over SSE| API[Cognitive API · Starlette]
-    API --> ORCH[Operator · routes the request]
-    ORCH <-->|Redis event stream · awareness mesh| SPEC[Specialist agents<br/>coder · researcher · analyst · reviewer · …]
-    SPEC --> ROUTER[Resilient model router<br/>role → model + fallback chain]
-    ROUTER --> LLMs[(Multiple model providers<br/>role-priced · distinct fallback terminals<br/>local model available as a pin)]
-    SPEC -->|MCP| GW[MCP gateway]
-    GW --> TOOLS[~18 MCP tool-servers<br/>memory · knowledge · exec · git · infra · feeds · …]
-    SPEC --> RAG[(Private knowledge corpus<br/>~27k docs / 294k chunks)]
-    SPEC --> GRAPH[(Continuity graph)]
-    API --> COST[Cost tracker · per-request budget guardrail]
-    API --> OBS[Observability · request + model-swap tracing]
-    subgraph Infra[Private server · Docker · Cloudflare Tunnel]
-        API
-        ORCH
-        SPEC
-        ROUTER
-        GW
-        TOOLS
-        RAG
-        GRAPH
-    end
-```
-
-</details>
-
 ---
 
 # For the technically curious
 
-The sections below cover the design decisions and the failure modes. Each one leads with the short version; the dropdown underneath carries the mechanics that back the claims. A note on specifics: any model named on this page or in the example config is illustrative. The architecture is model-agnostic by design, the roster rotates as better options ship, and the structure is the durable part. Component counts are approximate and drift as the system grows.
+Everything below expands. Each line is one part of the system; open the ones you care about and skip the rest. One note on specifics before you do: any model named on this page or in the example config is illustrative. The architecture is model-agnostic by design, the roster rotates as better options ship, and the structure is the durable part.
 
-## Model-agnostic by design
+<details markdown="1">
+<summary><strong>Model-agnostic by design</strong> · swap the engine, keep the substrate</summary>
 
-The model is the one rented part, so the system treats it as swappable behind two standard interfaces: an **MCP gateway** (the substrate's tools and memory exposed over the Model Context Protocol, mountable by any MCP-capable client) and an **OpenAI-compatible endpoint** (any client that speaks the standard chat format can drive the pipeline). Today the day-to-day client is Claude Code, extended through the same standard surfaces it already exposes: MCP for tools and memory, and lifecycle hooks that inject the right context on every turn. Swap the engine, keep the substrate: the work that's mine (memory, data, tools, routing, verification) doesn't move when the model does.
+The model is the one rented part, so the system treats it as swappable behind two standard interfaces: an **MCP gateway** (the substrate's tools and memory exposed over the Model Context Protocol, mountable by any MCP-capable client) and an **OpenAI-compatible endpoint** (any client that speaks the standard chat format can drive the pipeline). Today the day-to-day client is Claude Code, extended through the same standard surfaces it already exposes: MCP for tools and memory, and lifecycle hooks that inject the right context on every turn.
 
-## 1. How a request flows
+The point: the work that's mine (memory, data, tools, routing, verification) doesn't move when the model does. Moving to a better model, or another provider, is a config change, not a rebuild.
+
+</details>
+
+<details markdown="1">
+<summary><strong>1. How a request flows</strong> · one visible stream from prompt to answer</summary>
 
 The operator reads each request and either answers inline (one model call) or hands it to a specialist, which pulls context from memory and the knowledge base, calls tools over MCP, and streams its answer back as a card tagged with the model that served it and what the call cost. Everything is visible as it happens: tokens, tool invocations, and which model is running, not a black-box pause.
 
-<details markdown="1">
-<summary>The mechanics: transport, endpoints, and the six steps</summary>
+**The mechanics.**
 
 1. The canvas (a Next.js single-page app) opens a streaming connection and posts the prompt. Streaming uses the **AG-UI protocol over Server-Sent Events**, proxied to the backend so tokens, tool calls, and model-resolution events all arrive on one stream.
 2. The backend is a **Starlette** service exposing two surfaces: the AG-UI SSE endpoint for the canvas, and an OpenAI-compatible endpoint so other clients can talk to the same pipeline.
@@ -143,12 +118,12 @@ Two speed tiers fall out of this: the operator answers simple things inline in a
 
 </details>
 
-## 2. Agent orchestration
-
-The core is a multi-agent tree built on **Google's Agent Development Kit (ADK)**: eight agents in all, one operator (the root) plus seven specialists (coder, researcher, analyst, productivity, reviewer, evaluator, and a research sub-agent scoped to the coder). Specialization is what keeps it cheap and contained: each role gets the model suited and priced for its work, a failure or rate-limit stays inside one specialist, and the evaluator deliberately runs on a *different model family* than the agents whose output it scores, so nothing grades its own homework.
-
 <details markdown="1">
-<summary>The mechanics: least privilege, the single-parent rule, and the awareness mesh</summary>
+<summary><strong>2. Agent orchestration</strong> · eight agents, and nothing grades its own homework</summary>
+
+The core is a multi-agent tree built on **Google's Agent Development Kit (ADK)**: one operator (the root) plus seven specialists (coder, researcher, analyst, productivity, reviewer, evaluator, and a research sub-agent scoped to the coder). Specialization is what keeps it cheap and contained: each role gets the model suited and priced for its work, a failure or rate-limit stays inside one specialist, and the evaluator deliberately runs on a *different model family* than the agents whose output it scores.
+
+**The mechanics.**
 
 - **Cost and quality.** A heavy reasoning job and a one-line lookup shouldn't pay the same price or wait on the same model. Each role is mapped to the model that's best and most cost-effective for its work.
 - **Honest review.** Cross-family evaluation is imperfect independence (different weights, not necessarily different biases), but better than none. The reviewer is a separate instance kept off the write path by policy.
@@ -158,93 +133,90 @@ The core is a multi-agent tree built on **Google's Agent Development Kit (ADK)**
 
 </details>
 
-## 3. The tool layer (MCP)
-
-About eighteen tool-servers (memory, knowledge retrieval, code execution, git, feeds, infrastructure, and more) sit behind a single token-authenticated gateway. Adding a capability means registering a server, not rewiring agents. And agents don't carry every tool schema in context: the gateway exposes a **custom BM25 search over the tool catalog**, so an agent describes what it needs and gets the right tool back.
-
 <details markdown="1">
-<summary>The mechanics: the gateway, and why discovery is a search</summary>
+<summary><strong>3. The tool layer (MCP)</strong> · ~18 servers behind one gateway, found by search</summary>
 
-The gateway is FastMCP over streamable HTTP, token-authenticated; each tool-server is its own process. Two decisions worth explaining:
+About eighteen tool-servers (memory, knowledge retrieval, code execution, git, feeds, infrastructure, and more) sit behind a single token-authenticated gateway (FastMCP over streamable HTTP; each tool-server is its own process). Adding a capability means registering a server, not rewiring agents.
+
+**The mechanics.** Two decisions worth explaining:
 
 - **Register, don't rewire.** New tools compose in. The cost of that flexibility is an extra network hop and a single failure domain at the gateway, which is why the gateway gets its own health check and the whole fleet is health-polled.
-- **Search, don't dump context.** Carrying every tool's schema in every agent's context is expensive and dilutes attention. MCP's spec only lists tools, so the BM25 search is my own addition. It's the same instinct as the memory design (§5): use a cheap deterministic index to decide what to load before spending model tokens on it.
+- **Search, don't dump context.** Carrying every tool's schema in every agent's context is expensive and dilutes attention. So the gateway exposes a **custom BM25 search over the tool catalog**: an agent describes what it needs and gets the right tool back. MCP's spec only lists tools; this search is my own addition. Same instinct as the memory design (§5): use a cheap deterministic index to decide what to load before spending model tokens on it.
 
 </details>
 
-## 4. Model routing and resilience
-
-The part that took the most iteration: the first LLM call is easy; keeping calls reliable and cheap under real conditions is where the bugs lived. Role-to-model assignment is declarative config, not code. A deterministic scorer rates each prompt's complexity before any model runs, and that score plus budget state picks the tier: under budget pressure, work degrades to progressively cheaper models instead of failing, and only background work can be blocked outright. On the reliability side, a health tracker cools down rate-limited models so future calls skip known walls, a first-token watchdog catches models that stall without emitting anything, and an exhausted chain degrades to a usable message instead of crashing the run. The failure that taught me the most was silent: under budget pressure the cost router was quietly swapping an agent's model for a cheaper one that returned `200 OK` while behaving differently, so every substitution is now surfaced on the result card's badge and in tracing.
-
 <details markdown="1">
-<summary>The mechanics: the scorer, the thresholds, the health tracker, and the silent failure</summary>
+<summary><strong>4. Model routing and resilience</strong> · the budget router, the health tracker, and a silent failure</summary>
 
-**Cost-aware selection, decided before the call.** A deterministic scorer rates complexity 1-5 (word count, keyword classes, code markers, the agent's role weight, conversation depth) with no model in the loop. Under ~80% of the monthly budget, everyone runs on their assigned model; 80-95% downgrades only trivial tasks; 95-100% downgrades everything except essential high-complexity work; at 100% it fails closed on non-essential calls. Interactive agents are flagged essential and degrade instead of failing; only background evaluation can be hard-stopped. Spend is tracked per request against a hard monthly ceiling, with crash-safe atomic writes so the ledger survives a restart.
+The part that took the most iteration: the first LLM call is easy; keeping calls reliable and cheap under real conditions is where the bugs lived. Role-to-model assignment is declarative config. A deterministic scorer rates each prompt's complexity before any model runs, and that score plus budget state picks the tier: under budget pressure, work degrades to progressively cheaper models instead of failing, and only background work can be blocked outright. A health tracker cools down rate-limited models so calls skip known walls, a first-token watchdog catches models that stall without emitting anything, and an exhausted chain degrades to a usable message instead of crashing the run.
 
-**Health-aware fallback.** In the ADK version I built on, the model wrapper called the provider directly and didn't consult the underlying library's fallback config, so that global setting did nothing. (The gateway does support server-side fallback across hosted models; this wrapper exists for what that can't do: pinning a workload to the local model, and the health/cooldown logic here.) I found that gap and wrapped the model layer with one that actually implements it:
+**Cost-aware selection, decided before the call.** The scorer rates complexity 1-5 (word count, keyword classes, code markers, the agent's role weight, conversation depth) with no model in the loop. Under ~80% of the monthly budget, everyone runs on their assigned model; 80-95% downgrades only trivial tasks; 95-100% downgrades everything except essential high-complexity work; at 100% it fails closed on non-essential calls. Spend is tracked per request against a hard monthly ceiling, with crash-safe atomic writes so the ledger survives a restart.
+
+**Health-aware fallback.** In the ADK version I built on, the model wrapper called the provider directly and didn't consult the underlying library's fallback config, so that global setting did nothing. I found that gap and wrapped the model layer with one that actually implements it:
 
 - A singleton **health tracker** records any model that returns a rate-limit (429) and puts it in an **escalating cooldown** that grows with repeat offenses, up to a cap. Future calls preemptively skip a cooling-down model instead of re-hitting a wall.
-- A **time-to-first-token watchdog** bounds only the *first* response of each attempt. A model that stalls and emits nothing trips it and the call falls over to the next model; because nothing was yielded yet, there's no duplicate output. Once a real stream starts it runs unbounded, with a longer outer timeout as backstop. This was a specific fix: a hung model used to block the entire run until the outer pipeline timeout fired.
+- A **time-to-first-token watchdog** bounds only the *first* response of each attempt. A model that stalls and emits nothing trips it and the call falls over to the next model; because nothing was yielded yet, there's no duplicate output. Once a real stream starts it runs unbounded, with a longer outer timeout as backstop.
 - A fallback model that can't accept the tool definitions is detected and skipped as a compatibility miss, not surfaced as a failure.
 - If the *entire* chain is exhausted, the layer yields a graceful "this specialist is temporarily unavailable, others are still available" message rather than crashing the run group.
 
 The chains deliberately end on *different* terminal models, so no two roles share a last resort, and any workload can be pinned to a model running on the box itself as the escape hatch when every hosted provider is unhappy.
 
-**The silent-degradation story, in full.** Agents would intermittently get worse (more hedging, the occasional refusal) with nothing in the error logs. It wasn't the prompts: the cost router was swapping models under budget pressure. Silent degradation is worse than a hard failure, because you debug the wrong layer for an hour first. The fix was observability on the swap itself, so the first question on any behavioral regression is "which model actually served this call?" before anyone touches the prompt.
+**The failure that taught me the most was silent.** Agents would intermittently get worse (more hedging, the occasional refusal) with nothing in the error logs. It wasn't the prompts: under budget pressure the cost router was quietly swapping an agent's model for a cheaper one that returned `200 OK` while behaving differently. Silent degradation is worse than a hard failure, because you debug the wrong layer for an hour first. The fix was observability on the swap itself: every cost-router substitution now shows up on the result card's model badge and in tracing, so the first question on any behavioral regression is "which model actually served this call?" before anyone touches the prompt.
 
 </details>
 
-## 5. Memory
-
-Memory is layered: a private knowledge corpus (roughly **27,000 documents / ~294,000 chunks**, full-text retrieval by default), a continuity graph linking related conversations and decisions over time, a semantic memory service for durable facts with a nightly reconciliation job, and tiered context so the always-loaded core stays small. Two rules run through all of it: a cheap deterministic pass decides what the model sees before any model runs, and **memory is a lead, not a fact**, verified against the source before it's acted on.
-
 <details markdown="1">
-<summary>The mechanics: the four layers and the two rules</summary>
+<summary><strong>5. Memory</strong> · four layers, and memory is a lead, not a fact</summary>
+
+Memory is layered: a private knowledge corpus (roughly **27,000 documents / ~294,000 chunks**, full-text retrieval by default), a continuity graph linking related conversations and decisions over time, a semantic memory service for durable facts with a nightly reconciliation job, and tiered context so the always-loaded core stays small.
+
+**The mechanics.**
 
 - **A private knowledge base.** Retrieval over my own indexed corpus (a large archived reference set plus my own working notes and feeds). Keyword (full-text) retrieval is the default. It's a deliberate tradeoff: semantic (vector) search is wired but turned off because, at this corpus size, the keyword path was fast enough and simpler to operate, and the recall hit was acceptable for my own curated material.
 - **A continuity layer.** A standalone graph that links related conversations, decisions, and topics over time, so a new request can be connected to what came before instead of starting cold.
 - **Semantic memory + reconciliation.** A cloud semantic-memory service captures durable facts (decisions, commitments, context worth keeping) for cross-session recall, with a nightly job that reconciles and de-duplicates it so it doesn't rot.
 - **Hierarchical context tiering.** Always-on core vs. retrieved-on-demand, so the expensive always-loaded set stays small.
 
-The two rules, concretely: what context to load is decided by a cheap deterministic scan (no model call, no vector round-trip) before the model sees anything, the same instinct as the tool search. And recalled memory is treated as a pointer to verify: if memory says a vendor renews in July, the agent pulls the source email or contract and acts on *that*. This is the single most important discipline for keeping a long-lived memory system from confidently acting on something that was true three weeks ago.
+Two rules run through all of it. First, **a deterministic relevance pass runs before any model**: what context to load is decided by a cheap deterministic scan (no model call, no vector round-trip), the same instinct as the tool search. Second, **memory is a lead, not a fact**: recalled memory is a pointer to verify, so if memory says a vendor renews in July, the agent pulls the source email or contract and acts on *that*. This is the single most important discipline for keeping a long-lived memory system from confidently acting on something that was true three weeks ago.
 
 </details>
 
-## 6. The proactive layer
-
-A lot of the value is that it runs when I'm not looking at it. Scheduled routines pull from many sources, filter for signal (noise is the default every candidate item has to beat), and deliver a short brief. What gets dropped is logged rather than silently discarded, so the filter can be inspected instead of trusted blind.
-
 <details markdown="1">
-<summary>The mechanics: the filter and the consolidation stage</summary>
+<summary><strong>6. The proactive layer</strong> · signal over noise, with the dropped noise logged</summary>
 
-Candidate items run through an explicit relevance filter before they're allowed into a brief: is it actually relevant to what I'm working on, is it material, is it genuinely new, or is it noise. A separate consolidation stage de-duplicates and normalizes before anything is persisted, with a credential/PII screen in that path, which is also part of the privacy story: sensitive strings get caught at ingestion rather than after they're in the store.
+A lot of the value is that it runs when I'm not looking at it. Scheduled routines pull from many sources, filter for signal (noise is the default every candidate item has to beat), and deliver a short brief.
+
+**The mechanics.** Candidate items run through an explicit relevance filter before they're allowed into a brief: is it actually relevant to what I'm working on, is it material, is it genuinely new, or is it noise. What gets dropped is logged rather than silently discarded, so the filter can be inspected instead of trusted blind. A separate consolidation stage de-duplicates and normalizes before anything is persisted, with a credential/PII screen in that path, which is also part of the privacy story: sensitive strings get caught at ingestion rather than after they're in the store.
 
 </details>
 
-## 7. Infrastructure and operations
-
-Docker services across four segmented network tiers behind a Cloudflare Tunnel, agent code execution in an isolated sandbox, health-gated continuous deployment with a build-provenance check, a watchdog that flags dependency and CVE updates (low-risk ones auto-merge through CI), and tracing on every model call and every model swap, with spend attributed per request and per model.
-
 <details markdown="1">
-<summary>The mechanics: network tiers, the sandbox, and the deploy gate</summary>
+<summary><strong>7. Infrastructure and operations</strong> · segmented, sandboxed, health-gated deploys</summary>
+
+Docker services across four segmented network tiers behind a Cloudflare Tunnel, agent code execution in an isolated sandbox, health-gated continuous deployment with a build-provenance check, and tracing on every model call and every model swap.
+
+**The mechanics.**
 
 - **Containerized, network-segmented.** Four core tiers (public-facing, internal backend, outbound-capable, and an isolated sandbox), plus a couple of purpose-built nets like the code-execution broker, so the blast radius of any one service is bounded. Public ingress is through a Cloudflare Tunnel; the origin isn't directly exposed.
 - **Sandboxed code execution.** Agent-run code executes in an isolated sandbox (ephemeral tmpfs workspace, a hardened runtime) on its own network tier.
 - **Health-gated CD.** A push to main triggers pull, smart rebuild, health check, and a **build-provenance gate that asserts the running build actually matches what was deployed** before it's considered green, so a "successful" deploy that didn't actually swap the image gets caught. A drift-check job reconciles config (ports, versions) automatically.
-- **Self-healing.** The watchdog flags dependency and CVE updates; low-risk ones are auto-merged through CI checks, and the decisions that genuinely need me escalate.
+- **Self-healing.** A watchdog flags dependency and CVE updates; low-risk ones are auto-merged through CI checks, and the decisions that genuinely need me escalate.
+- **Observability.** Spend attributed per request and per model; every call and every swap traced.
 
 </details>
 
-## 8. Engineering principles I kept coming back to
+<details markdown="1">
+<summary><strong>8. Engineering principles I kept coming back to</strong> · algorithm-first, failure made visible</summary>
 
 - **Algorithm-first, LLM on the edges.** Default every data-access and classification problem to something deterministic: regex, an index, SQL, set membership, the standard library. Reach for a model only on the genuinely irreducible part (semantics, multi-hop synthesis, judgment). The complexity scorer, the tool search, and the memory relevance pass are all this principle. It's what keeps the thing fast and affordable at scale.
 - **Make failure visible, then make it cheap.** Most of the reliability work followed the same arc: a real outage or silent regression, surfaced by debugging, then closed with a guardrail *and a trace* so the same class of problem can't hide again.
 - **Resilience over peak capability.** Ordered fallbacks, escalating cooldowns, graceful degradation, and the option to pin any workload to a local model that needs no external provider. A system that's slightly slower but stays up beats a faster one that falls over.
 - **Cost as a first-class constraint.** Designing under a real ceiling forces honest trade-offs: model choice, context size, when to retrieve, when to use a model at all.
 
-## Known limits
+</details>
 
-No system is free of trade-offs; the real ones here:
+<details markdown="1">
+<summary><strong>Known limits</strong> · the trade-offs, stated plainly</summary>
 
 - **One router in the path.** All hosted models are reached through a single gateway today, so a router outage is the shared dependency. Mitigated by pinning a workload to the local model, not eliminated.
 - **The demo is representative, not connected.** The real UI on sample data; it doesn't touch the production system.
@@ -252,7 +224,10 @@ No system is free of trade-offs; the real ones here:
 - **Keyword retrieval can miss paraphrases.** The default full-text path trades some recall for speed; semantic search is wired for when that matters.
 - **Not a high-security or classified design.** It's serious about data control, not a threat model against a determined adversary.
 
-## Stack at a glance
+</details>
+
+<details markdown="1">
+<summary><strong>Stack at a glance</strong> · the whole system in one table</summary>
 
 *(The roles and structure are the durable part; every model seat is illustrative and rotates as better options ship.)*
 
@@ -273,6 +248,8 @@ No system is free of trade-offs; the real ones here:
 | Infra | Docker, four core segmented tiers, Cloudflare Tunnel, sandboxed exec |
 | Reliability | per-role fallback chains, health tracker with escalating cooldown, TTFT watchdog, graceful degrade |
 | Cost / observability | per-request metering to a monthly ceiling, full call + model-swap tracing |
+
+</details>
 
 ---
 

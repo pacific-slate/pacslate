@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="660" viewBox="0 0 560 660" role="img" aria-label="An illustrative day with Pacific Slate. Early morning: a short brief on what changed and what needs attention. Midday: a question answered with sources, because the context is already there. Afternoon: one quiet flag when something being watched actually moves. Evening: a log of everything it decided was not worth mentioning, so its judgment can be checked.">
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="620" viewBox="0 0 560 620" role="img" aria-label="A typical day. Morning: a brief listing what changed and what needs attention. Midday: a question answered with the background already loaded. Afternoon: one notice when something being tracked changes. Evening: a discard log recording what was filtered out.">
   <defs>
     <style>
       .bg{fill:#0b0c0e}
@@ -7,41 +7,41 @@
       .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
       .kicker{fill:#6d7178;font-size:14px;letter-spacing:.18em}
       .when{fill:#6ee0ad;font-size:14px;letter-spacing:.14em}
-      .t{fill:#e7e8ea;font-size:22px;font-weight:640}
-      .d{fill:#abb0b8;font-size:17px}
+      .t{fill:#e7e8ea;font-size:21px;font-weight:640}
+      .d{fill:#abb0b8;font-size:16.5px}
       .spine{stroke:rgba(255,255,255,0.18);stroke-width:1}
       .dot{fill:#6ee0ad}
       .ring{fill:none;stroke:#6ee0ad;stroke-opacity:.30;stroke-width:1}
     </style>
   </defs>
-  <rect class="bg" width="560" height="660" rx="10"/>
-  <text class="mono kicker" x="28" y="42">A DAY WITH IT</text>
+  <rect class="bg" width="560" height="620" rx="10"/>
+  <text class="mono kicker" x="28" y="42">A TYPICAL DAY</text>
 
-  <line class="spine" x1="46" y1="76" x2="46" y2="600"/>
+  <line class="spine" x1="46" y1="72" x2="46" y2="560"/>
 
-  <circle class="ring" cx="46" cy="112" r="9"/><circle class="dot" cx="46" cy="112" r="3.5"/>
-  <rect class="card" x="78" y="76" width="454" height="112" rx="9"/>
-  <text class="mono when" x="100" y="106">EARLY</text>
-  <text class="sans t" x="100" y="136">A short brief, unprompted</text>
-  <text class="sans d" x="100" y="164">What changed overnight, and what actually needs me.</text>
+  <circle class="ring" cx="46" cy="106" r="9"/><circle class="dot" cx="46" cy="106" r="3.5"/>
+  <rect class="card" x="78" y="72" width="454" height="104" rx="9"/>
+  <text class="mono when" x="100" y="102">MORNING</text>
+  <text class="sans t" x="100" y="130">Brief</text>
+  <text class="sans d" x="100" y="156">What changed, and what needs attention.</text>
 
-  <circle class="ring" cx="46" cy="248" r="9"/><circle class="dot" cx="46" cy="248" r="3.5"/>
-  <rect class="card" x="78" y="212" width="454" height="112" rx="9"/>
-  <text class="mono when" x="100" y="242">MIDDAY</text>
-  <text class="sans t" x="100" y="272">I ask it something</text>
-  <text class="sans d" x="100" y="300">It already has the background, so I skip the re-explaining.</text>
+  <circle class="ring" cx="46" cy="234" r="9"/><circle class="dot" cx="46" cy="234" r="3.5"/>
+  <rect class="card" x="78" y="200" width="454" height="104" rx="9"/>
+  <text class="mono when" x="100" y="230">MIDDAY</text>
+  <text class="sans t" x="100" y="258">Question</text>
+  <text class="sans d" x="100" y="284">Answered with the background already loaded.</text>
 
-  <circle class="ring" cx="46" cy="384" r="9"/><circle class="dot" cx="46" cy="384" r="3.5"/>
-  <rect class="card" x="78" y="348" width="454" height="112" rx="9"/>
-  <text class="mono when" x="100" y="378">AFTERNOON</text>
-  <text class="sans t" x="100" y="408">Something I'm watching moves</text>
-  <text class="sans d" x="100" y="436">It tells me once, clearly. Not twenty notifications.</text>
+  <circle class="ring" cx="46" cy="362" r="9"/><circle class="dot" cx="46" cy="362" r="3.5"/>
+  <rect class="card" x="78" y="328" width="454" height="104" rx="9"/>
+  <text class="mono when" x="100" y="358">AFTERNOON</text>
+  <text class="sans t" x="100" y="386">Watch triggers</text>
+  <text class="sans d" x="100" y="412">One notice when a tracked item changes.</text>
 
-  <circle class="ring" cx="46" cy="520" r="9"/><circle class="dot" cx="46" cy="520" r="3.5"/>
-  <rect class="card" x="78" y="484" width="454" height="112" rx="9"/>
-  <text class="mono when" x="100" y="514">EVENING</text>
-  <text class="sans t" x="100" y="544">The part I like most</text>
-  <text class="sans d" x="100" y="572">What it chose not to tell me is written down too.</text>
+  <circle class="ring" cx="46" cy="490" r="9"/><circle class="dot" cx="46" cy="490" r="3.5"/>
+  <rect class="card" x="78" y="456" width="454" height="104" rx="9"/>
+  <text class="mono when" x="100" y="486">EVENING</text>
+  <text class="sans t" x="100" y="514">Discard log</text>
+  <text class="sans d" x="100" y="540">What it filtered out, recorded for review.</text>
 
-  <text class="mono kicker" x="28" y="634">ILLUSTRATIVE · A TYPICAL DAY, NOT A RECORDING</text>
+  <text class="mono kicker" x="28" y="596">ILLUSTRATIVE</text>
 </svg>

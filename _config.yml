@@ -1,5 +1,5 @@
 title: Pacific Slate
-description: A self-hosted, model-agnostic personal AI system, and the design decisions behind it.
+description: A self-hosted AI system that remembers, works in the background, and runs on hardware I own. What it does, and the design decisions behind it.
 
 # No theme: a minimal custom layout (_layouts/default.html), applied to the
 # README so the homepage stays utility-focused, fast, and on-brand. README.md

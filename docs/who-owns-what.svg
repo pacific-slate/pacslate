@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="640" viewBox="0 0 560 640" role="img" aria-label="Who owns what. On my own server and staying there: my documents and notes, the memory that carries between conversations, the tools it can use, and the judgment about what to do when. Rented and swappable: the AI model itself, reached through a standard connection, which can be exchanged for a better one or replaced by a model running on the same server.">
+  <defs>
+    <style>
+      .bg{fill:#0b0c0e}
+      .own{fill:#121419;stroke:#6ee0ad;stroke-opacity:.50}
+      .card{fill:#121419;stroke:rgba(255,255,255,0.10)}
+      .chip{fill:#0b0c0e;stroke:rgba(255,255,255,0.18)}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+      .kicker{fill:#6d7178;font-size:14px;letter-spacing:.18em}
+      .glabel{fill:#6ee0ad;font-size:14px;letter-spacing:.16em}
+      .t{fill:#e7e8ea;font-size:19px;font-weight:640}
+      .d{fill:#abb0b8;font-size:15.5px}
+      .f{fill:#6d7178;font-size:15px}
+      .arrow{stroke:#6ee0ad;stroke-width:1.5;fill:none;stroke-opacity:.65}
+      .ah{fill:#6ee0ad;fill-opacity:.65}
+    </style>
+  </defs>
+  <rect class="bg" width="560" height="640" rx="10"/>
+  <text class="mono kicker" x="28" y="42">WHO OWNS WHAT</text>
+
+  <rect class="own" x="28" y="66" width="504" height="266" rx="10"/>
+  <text class="mono glabel" x="52" y="98">MINE · ON MY OWN SERVER · STAYS PUT</text>
+
+  <rect class="chip" x="52" y="118" width="222" height="80" rx="8"/>
+  <text class="sans t" x="72" y="150">My own material</text>
+  <text class="sans d" x="72" y="176">notes, documents, history</text>
+
+  <rect class="chip" x="286" y="118" width="222" height="80" rx="8"/>
+  <text class="sans t" x="306" y="150">The memory</text>
+  <text class="sans d" x="306" y="176">what carries between chats</text>
+
+  <rect class="chip" x="52" y="214" width="222" height="80" rx="8"/>
+  <text class="sans t" x="72" y="246">The tools</text>
+  <text class="sans d" x="72" y="272">what it can actually do</text>
+
+  <rect class="chip" x="286" y="214" width="222" height="80" rx="8"/>
+  <text class="sans t" x="306" y="246">The judgment</text>
+  <text class="sans d" x="306" y="272">what to use, and when</text>
+
+  <text class="sans f" x="52" y="318">Exportable, deletable, and not training anyone's product.</text>
+
+  <path class="arrow" d="M232 340 L232 384"/><polygon class="ah" points="232,384 227,374 237,374"/>
+  <text class="sans f" x="252" y="360">a question goes out</text>
+  <path class="arrow" d="M328 384 L328 340"/><polygon class="ah" points="328,340 323,350 333,350"/>
+
+  <rect class="card" x="28" y="392" width="504" height="118" rx="10"/>
+  <text class="mono kicker" x="52" y="422">RENTED · SWAPPABLE</text>
+  <text class="sans t" x="52" y="454">The AI model itself</text>
+  <text class="sans d" x="52" y="480">Reached through a standard connection, so a better one</text>
+  <text class="sans d" x="52" y="500">can take its place without rebuilding anything around it.</text>
+
+  <rect class="card" x="28" y="526" width="504" height="76" rx="10"/>
+  <text class="sans d" x="52" y="556">If I'd rather not send anything out at all, a model can</text>
+  <text class="sans d" x="52" y="578">run on the same server instead.</text>
+
+  <text class="mono kicker" x="28" y="628">THE DURABLE PARTS ARE OWNED · THE MODEL IS A COMMODITY</text>
+</svg>

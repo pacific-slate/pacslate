@@ -76,7 +76,7 @@
   <!-- PRIVATE CORPUS (data store, purple accent) -->
   <rect x="750" y="590" width="270" height="62" rx="10" fill="#0c0d13" stroke="#C9A8FF" stroke-opacity="0.5"/>
   <text x="885" y="616" text-anchor="middle" fill="#ffffff" font-size="16">Private corpus · RAG</text>
-  <text x="885" y="636" text-anchor="middle" fill="#C8C5D6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">~27k docs / 294k chunks</text>
+  <text x="885" y="636" text-anchor="middle" fill="#C8C5D6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">~14k docs / ~196k passages</text>
 
   <!-- CONTINUITY GRAPH (data store, purple accent) -->
   <rect x="1070" y="590" width="250" height="62" rx="10" fill="#0c0d13" stroke="#C9A8FF" stroke-opacity="0.5"/>

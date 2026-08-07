@@ -47,7 +47,9 @@ I hold what accumulates, I decide where requests go, and none of it becomes a ve
 
 ## Building it
 
-I am an operator and systems architect by background, not a career software engineer. The architecture is mine: the components, how they connect, what each runs on, the failure behavior, and the spending limits. I built it AI-natively, specifying and reviewing while coding agents wrote most of the code.
+I am an operator and systems architect by background, not a career software engineer. The architecture is mine: which components exist, how they connect, what each runs on, how it behaves when a part fails, and what it is allowed to spend. I built it AI-natively, specifying and reviewing while coding agents wrote most of the code.
+
+It has run since early 2026 and I use it daily. Most of what the technical sections describe came out of operating it rather than planning it. The fallback layer exists because the framework's own fallback setting turned out to do nothing. The model label on every answer exists because a cost-driven substitution degraded output silently before I traced it.
 
 ---
 

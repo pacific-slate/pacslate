@@ -12,13 +12,11 @@ I designed it, selected the parts, and run it day to day. Technical detail is in
 - Records what it decided not to raise, so the filtering can be checked.
 - Connects to standard AI clients, so I use it from tools I already have.
 
-![A typical day: a morning brief listing what changed and what needs attention; a midday question answered with the background already loaded; an afternoon notice when a tracked item changes; an evening discard log recording what was filtered out.](docs/a-day-with-it.svg)
+![What gets raised: each scheduled run collects candidate items, every item is scored for relevance, materiality, and novelty before it can enter a brief, and the run splits into two outcomes. Items that pass are raised in the brief, which says what changed and what needs attention. Items that do not pass go to a discard log, recorded rather than dropped, so the filter can be checked.](docs/what-gets-raised.svg)
 
 ## How a request is handled
 
 Eight agents do the work: one that reads the request and routes it, and seven specialists for research, code, analysis, review, and related work. Each runs on a model chosen for that job, so a short lookup and a long analysis do not draw the same cost or wait on the same machinery.
-
-![Path of a request: classified and assigned to a specialist; context loaded from memory and stored files; a model selected, with a substitute if the first is unavailable; the answer returned with sources, model used, and cost; durable facts written back to memory.](docs/what-happens-when-i-ask.svg)
 
 Answers carry their sources, so a claim can be traced, and the cost of the call, so spending stays visible as it happens rather than at the end of the month.
 
@@ -37,7 +35,7 @@ Answers carry their sources, so a claim can be traced, and the cost of the call,
 
 The parts that accumulate stay on my server. The model is rented.
 
-![Ownership split. Held on my own server: files and notes, stored memory, tools, and the routing and spending limits. Rented: the AI model, reached over a standard interface and replaceable without changes elsewhere. A model can also run on the same server when nothing should leave it.](docs/who-owns-what.svg)
+![Where the data sits. What I connect, documents notes code and feeds, is ingested, de-duplicated, and screened for credentials and personal data, then held on my own server: the knowledge corpus, stored memory, tools, and the routing and spending limits. That material accumulates there and is exportable, deletable, and not used for training. Below it, across a labeled standard interface, is the rented model: the request goes out with context already loaded, and the answer returns with its sources and cost. Replacing the model is a configuration change, and nothing above it moves.](docs/who-owns-what.svg)
 
 The model is the one part I do not control, so it is treated as replaceable. Substituting a better one is a configuration change.
 

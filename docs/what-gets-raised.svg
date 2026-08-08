@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="600" viewBox="0 0 560 600" role="img" aria-label="What gets raised. Each scheduled run pulls candidate items from the connected sources. Every item is scored for relevance, materiality, and novelty before it can enter a brief. Items that pass are raised in the brief, which says what changed and what needs attention. Items that do not pass go to a discard log, recorded rather than dropped, so the filter can be audited. Both outcomes are written down.">
+  <defs>
+    <style>
+      .bg{fill:#0b0c0e}
+      .own{fill:#121419;stroke:#6ee0ad;stroke-opacity:.50}
+      .card{fill:#121419;stroke:rgba(255,255,255,0.10)}
+      .chip{fill:#0b0c0e;stroke:rgba(255,255,255,0.18)}
+      .item{fill:#0b0c0e;stroke:rgba(255,255,255,0.22)}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+      .kicker{fill:#6d7178;font-size:14px;letter-spacing:.18em}
+      .glabel{fill:#6ee0ad;font-size:14px;letter-spacing:.16em}
+      .t{fill:#e7e8ea;font-size:18.5px;font-weight:640}
+      .c{fill:#e7e8ea;font-size:17px;font-weight:640}
+      .d{fill:#abb0b8;font-size:15.5px}
+      .f{fill:#6d7178;font-size:15px}
+      .arrow{stroke:#6ee0ad;stroke-width:1.5;fill:none;stroke-opacity:.6}
+      .ah{fill:#6ee0ad;fill-opacity:.6}
+    </style>
+  </defs>
+  <rect class="bg" width="560" height="600" rx="10"/>
+  <text class="mono kicker" x="28" y="42">WHAT GETS RAISED</text>
+
+  <rect class="card" x="28" y="62" width="504" height="94" rx="10"/>
+  <text class="mono kicker" x="52" y="92">EACH SCHEDULED RUN COLLECTS</text>
+  <rect class="item" x="52" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="84" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="116" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="148" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="180" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="212" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="244" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="276" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="308" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="340" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="372" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="404" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="436" y="112" width="26" height="26" rx="5"/>
+  <rect class="item" x="468" y="112" width="26" height="26" rx="5"/>
+
+  <path class="arrow" d="M60 156 L60 198"/><polygon class="ah" points="60,198 55,188 65,188"/>
+  <text class="sans d" x="84" y="182">Every item is scored before it can enter a brief.</text>
+
+  <rect class="own" x="28" y="208" width="504" height="132" rx="10"/>
+  <text class="mono glabel" x="52" y="238">SCORED ON THREE THINGS</text>
+  <rect class="chip" x="52" y="256" width="144" height="64" rx="8"/>
+  <text class="sans c" x="124" y="294" text-anchor="middle">Relevance</text>
+  <rect class="chip" x="208" y="256" width="144" height="64" rx="8"/>
+  <text class="sans c" x="280" y="294" text-anchor="middle">Materiality</text>
+  <rect class="chip" x="364" y="256" width="144" height="64" rx="8"/>
+  <text class="sans c" x="436" y="294" text-anchor="middle">Novelty</text>
+
+  <path class="arrow" d="M280 340 L280 362 L170 362 L170 394"/>
+  <polygon class="ah" points="170,394 165,384 175,384"/>
+  <path class="arrow" d="M280 340 L280 362 L390 362 L390 394"/>
+  <polygon class="ah" points="390,394 385,384 395,384"/>
+
+  <rect class="card" x="28" y="402" width="246" height="142" rx="10"/>
+  <text class="mono glabel" x="52" y="432">RAISED</text>
+  <text class="sans t" x="52" y="462">The brief</text>
+  <text class="sans d" x="52" y="488">What changed, and what</text>
+  <text class="sans d" x="52" y="508">needs attention.</text>
+
+  <rect class="card" x="286" y="402" width="246" height="142" rx="10"/>
+  <text class="mono kicker" x="310" y="432">NOT RAISED</text>
+  <text class="sans t" x="310" y="462">Discard log</text>
+  <text class="sans d" x="310" y="488">Recorded, not dropped,</text>
+  <text class="sans d" x="310" y="508">so the filter can be</text>
+  <text class="sans d" x="310" y="528">checked.</text>
+
+  <text class="sans f" x="28" y="578">Both outcomes are written down, so the filter can be audited.</text>
+</svg>

@@ -2,6 +2,8 @@
 
 I was in the first year of an MBA, trying to manage a firehose of information while applying to internships and keeping up with my wife and two kids, and I kept re-explaining my whole situation to whatever AI program I was using that week. I wanted one that updated itself, filtered the slop, and kept the data mine.
 
+I built this website to share the structure for anyone looking to do something similar. This isn't meant to be a service or product to purchase, it's something you can hand off to your own LLM and use as a guide.
+
 It runs on a rented server, a dedicated machine that hosts the services and holds encrypted backups of the files I care about. I designed it, selected the parts, and run it day to day (technical details in the collapsed sections at the bottom). 
 
 ## What it does
@@ -205,7 +207,7 @@ Chains terminate on different models per role, so no two roles share a last reso
 - **Retrieval tuning is ongoing.** Hybrid retrieval covers more than keyword alone, but ranking is not a solved problem here.
 - **Not a high-security design.** Serious about data control, not a threat model against a determined adversary.
 
-**Rebuilding it.** This is a recipe to adapt, not a product to install. Point a coding agent at the architecture and rebuild the parts you want on what you already have. A working floor:
+**Rebuilding it.** Point a coding agent at the architecture and rebuild the parts you want on what you already have. A working floor:
 
 | Item | Cost |
 |---|---|

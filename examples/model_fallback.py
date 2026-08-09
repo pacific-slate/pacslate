@@ -162,7 +162,8 @@ async def call_with_fallback(prompt, primary, fallback_chain, *, stream, trace,
     for model in live:
         for attempt in range(retries_per_model):
             try:
-                text, in_tok, out_tok = await _stream_once(model, prompt, stream)
+                text, in_tok, out_tok = await asyncio.wait_for(
+                    _stream_once(model, prompt, stream), timeout=OUTER_TIMEOUT_S)
                 health.mark_success(model)
                 trace("model_call_ok", model=model, attempt=attempt, fell_back=model != primary)
                 return Result(text, model, fell_back=model != primary,
@@ -173,9 +174,9 @@ async def call_with_fallback(prompt, primary, fallback_chain, *, stream, trace,
                 trace("model_skipped_incompatible", model=model)
                 break
 
-            except asyncio.TimeoutError:              # no first token (stall or empty)
+            except asyncio.TimeoutError:              # no first token, or a mid-stream stall
                 cd = health.mark_rate_limited(model)  # treat a stall like a wall
-                attempts.append(f"{model}:ttft_timeout")
+                attempts.append(f"{model}:stall_timeout")
                 trace("model_stalled", model=model, cooldown_s=cd)
                 break                                 # nothing yielded -> next model, no dupes
 

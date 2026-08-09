@@ -1416,7 +1416,7 @@
           </button>
           <button class="chatbar-tool" data-toggle="tools">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 01-4.4 6.4l-7 7a1.5 1.5 0 102 2l7-7a4 4 0 016.4-4.4L16 9 13 6l1.7-1.7z"/></svg>
-            <span class="tip">tools · 19 mcp</span>
+            <span class="tip">tools · 24 mcp</span>
           </button>
           <button class="chatbar-tool" data-toggle="memory">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1489,7 +1489,7 @@
   // ---- /api/cost : budget panel (matches the README cost narrative) ---------
   var COST = {
     today_spend: 3.12, daily_budget: 7.5, budget_ratio: 0.416,
-    monthly_spend: 78.4, monthly_budget: 172, monthly_ratio: 0.456,
+    monthly_spend: 78.4, monthly_budget: 200, monthly_ratio: 0.392,
     mode: "capped", calls_today: 42,
   };
 
@@ -2847,14 +2847,12 @@
     // ====== MARKDOWN RENDERING ======
     // Configure marked once (idempotent) — used for all assistant responses.
     // gfm: GitHub-flavored markdown so tables, fenced code, task lists work.
-    // headerIds disabled to prevent collisions across multiple cards.
+    // Sanitization is DOMPurify's job downstream; marked v12 emits no header ids.
     if (typeof marked !== 'undefined') {
       try {
         marked.setOptions({
           gfm: true,
           breaks: false,
-          headerIds: false,
-          mangle: false,
         });
       } catch (_) {}
     }
@@ -3042,7 +3040,7 @@
       const sections = [
         { label: 'critical · 3', items: [['Review Acme account follow-up','needs owner',true],['Finish the strategy memo','due wed',true],['Host support callback','today',true]]},
         { label: 'calendar', items: [['Weekly sync','09:00'],['Acme quarterly review','14:00'],['Dinner — Jordan','18:30']]},
-        { label: 'field of view', items: [['Atlas · 100+ seats · steady','7d'],['Beacon renewal · drifting','11d'],['Apt 2BR downtown · 3 new under budget','today']]},
+        { label: 'field of view', items: [['Atlas · 100+ seats · steady','7d'],['Beacon renewal · drifting','11d'],['Textbooks · 3 used copies under budget','today']]},
       ];
       sections.forEach(s => {
         const sec = document.createElement('div'); sec.className = 'today-section';
@@ -3284,7 +3282,7 @@
         addTrace(stream.trace, 'reading task list');
         await streamText(stream.live, 'Pulling your day. Three things matter most: Acme follow-up needs an owner, the strategy memo is due Wednesday, and Host is waiting on a callback. Acme review lands at 14:00.', 16);
         await new Promise(r => setTimeout(r, 250));
-        replaceWithCard(stream, () => spawnCard({ kind:'today', label:'today · sun 26 apr', width:400, builder: buildTodayCard }));
+        replaceWithCard(stream, () => spawnCard({ kind:'today', label:(()=>{const d=new Date();return `today · ${['sun','mon','tue','wed','thu','fri','sat'][d.getDay()]} ${d.getDate()} ${['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][d.getMonth()]}`;})(), width:400, builder: buildTodayCard }));
       }
       else if (lower.startsWith('/deal')) {
         addTrace(stream.trace, 'reading pipeline (crm · personal)');

@@ -91,5 +91,5 @@
   <!-- MULTIPLE LLM PROVIDERS (outside boundary) -->
   <rect x="400" y="943" width="300" height="60" rx="10" fill="#0b0c12" stroke="#ffffff" stroke-opacity="0.18"/>
   <text x="550" y="971" text-anchor="middle" fill="#ffffff" font-size="17">Multiple model providers</text>
-  <text x="550" y="990" text-anchor="middle" fill="#C8C5D6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5">role-priced · ends on self-hosted</text>
+  <text x="550" y="990" text-anchor="middle" fill="#C8C5D6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5">role-priced · local pin available</text>
 </svg>

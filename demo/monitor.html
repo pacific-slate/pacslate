@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pacific Slate // Monitor</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -159,7 +159,7 @@
     <section class="card" id="card-status">
       <h2>Status <span class="n muted" id="status-state">live</span></h2>
       <div class="row"><span class="k">Updated</span><span class="v" id="st-updated">—</span></div>
-      <div class="row"><span class="k">Sources</span><span class="sub">USGS · OpenSky · CoinGecko · Wire RSS</span></div>
+      <div class="row"><span class="k">Sources</span><span class="sub">USGS · HN (live) · other cards sample</span></div>
     </section>
 
     <section class="card" id="card-seismic">
@@ -303,14 +303,9 @@
       ].join(";");
       document.body.appendChild(b);
     }
-    // Tag the sovereign rail header so the private layer reads as sample data.
-    var gapCount = document.getElementById("p-gap-count");
-    if (gapCount) {
-      var h = gapCount.closest("section") ? gapCount.closest("section").querySelector("h2") : null;
-    }
     var ppl = document.getElementById("card-people");
     var pri = document.getElementById("card-priorities");
-    [pri, ppl, document.getElementById("card-signals")].forEach(function (sec) {
+    [pri, ppl, document.getElementById("card-signals"), document.getElementById("card-markets"), document.getElementById("card-air")].forEach(function (sec) {
       if (sec && !sec.dataset.sampled) {
         sec.dataset.sampled = "1";
         var tag = document.createElement("span");

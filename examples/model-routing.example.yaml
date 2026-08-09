@@ -7,14 +7,14 @@
 #
 # This file shows the real config STRUCTURE. The model IDs and dollar figures
 # are illustrative placeholders: the roster rotates as better options ship,
-# and the architecture is model-agnostic on purpose (see README, "Model-agnostic
-# by design"). Swap in your own models; the shape is the point.
+# and the architecture is model-agnostic on purpose (see README, "Model
+# independence"). Swap in your own models; the shape is the point.
 #
 # Model IDs use the internal "openrouter/<provider>/<model>" prefix the agent
 # layer routes on. The fallback chain is shown flat at the router level for
 # brevity; the real config defines a per-role primary + ordered chain, and the
 # terminals are deliberately DIFFERENT models per role, so no two roles share
-# a last resort (see README §4). Any role can instead be pinned to a model
+# a last resort (see README §3, Reliability and cost). Any role can instead be pinned to a model
 # served locally on the box.
 
 router:

@@ -69,9 +69,10 @@
     /* click-to-enlarge lightbox (vector SVG stays crisp at any size) */
     .lightbox{position:fixed;inset:0;z-index:60;display:none;overflow:auto;
       background:rgba(8,9,11,0.95);padding:28px;cursor:zoom-out;-webkit-overflow-scrolling:touch}
-    .lightbox.open{display:block}
-    .lightbox img{display:block;margin:0 auto;width:min(1400px,94vw);max-width:none;
-      height:auto;cursor:zoom-out}
+    .lightbox.open{display:flex}
+    .lightbox img{display:block;margin:auto;width:min(1400px,94vw);max-width:none;
+      height:auto;cursor:zoom-out;border:1px solid var(--rule-strong);border-radius:10px;
+      background:var(--bg)}
     .lightbox .lb-x{position:fixed;top:12px;right:18px;color:var(--soft);
       font-family:var(--mono);font-size:13px;letter-spacing:.04em}
     table{border-collapse:collapse;width:100%;margin:16px 0;font-size:15px}

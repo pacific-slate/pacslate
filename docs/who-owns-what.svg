@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="740" viewBox="0 0 560 740" role="img" aria-label="Where the data sits. What I connect, documents notes code and feeds, is ingested, de-duplicated, and screened for credentials and personal data. It is then held on my own server: the knowledge corpus, stored memory, tools, and the routing and spending limits. That material accumulates there, and is exportable, deletable, and not used for training. Below it, reached across a standard interface, is the rented model: the request goes out with context already loaded, and the answer returns with its sources and cost. Replacing the model is a configuration change, and nothing above it moves.">
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="740" viewBox="0 0 560 740" role="img" aria-label="Where the data sits. What I connect, documents notes code and feeds, is ingested, de-duplicated, and screened for credentials and personal data. It is then held on my own server: the knowledge corpus, continuity graph, tools, and the routing and spending limits. That material accumulates there, and is exportable, deletable, and not used for training. Below it, reached across a standard interface, is the rented model: the request goes out with context already loaded, and the answer returns with its sources and cost. Replacing the model is a configuration change, and nothing above it moves.">
   <defs>
     <style>
       .bg{fill:#0b0c0e}
@@ -44,7 +44,7 @@
   <text class="sans d" x="72" y="328">documents, indexed</text>
 
   <rect class="chip" x="286" y="274" width="222" height="72" rx="8"/>
-  <text class="sans t" x="306" y="304">Stored memory</text>
+  <text class="sans t" x="306" y="304">Continuity graph</text>
   <text class="sans d" x="306" y="328">carries between sessions</text>
 
   <rect class="chip" x="52" y="358" width="222" height="72" rx="8"/>

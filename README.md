@@ -1,18 +1,23 @@
 # Pacific Slate
 
-Pacific Slate is the name I gave the system I built to organize my own work and information. Rather than rely on what Claude or ChatGPT provide out of the box, I wanted my material held somewhere private but still easy to reach. It runs on a rented server, a modest machine that hosts the services and holds encrypted backups of the files I care about.
+I was in the first year of an MBA, trying to manage a firehose of information while applying to internships and keeping up with my wife and two kids, and I kept re-explaining my whole situation to whatever AI program I was using that week. I wanted one that updated itself, filtered the slop, and kept the data mine.
 
-I designed it, selected the parts, and run it day to day. Technical detail is in the collapsed sections at the bottom.
+It runs on a rented server, a dedicated machine that hosts the services and holds encrypted backups of the files I care about. I designed it, selected the parts, and run it day to day (technical details in the collapsed sections at the bottom). 
 
 ## What it does
 
-- Keeps a current picture of the material I have connected to it.
-- Runs scheduled jobs that produce a short brief, rather than waiting to be asked.
-- Answers questions with the relevant background already loaded.
-- Records what it decided not to raise, so the filtering can be checked.
-- Connects to standard AI clients, so I use it from tools I already have.
+- Updates itself from my sources, sorts through the noise, and maintains the data in my privately owned database.
+- Uses a multi-agent tree to route work to the model best suited for it.
+- Remembers my choices and preferences, and learns from past outcomes (applying lessons learned to new tasks or situations).
+- Cites sources and maintains logs of everything it does, allowing for traceability and accountability. 
+- Checks the source document rather than trusting what it remembers.
+- Integrates into the tools and services I already use, so it adjusts to my workflow rather than forcing me to change it.
 
-![What gets raised: each scheduled run collects candidate items, every item is scored for relevance, materiality, and novelty before it can enter a brief, and the run splits into two outcomes. Items that pass are raised in the brief, which says what changed and what needs attention. Items that do not pass go to a discard log, recorded rather than dropped, so the filter can be checked.](docs/what-gets-raised.svg)
+![What gets raised: each scheduled run collects candidate items from connected sources, among them messages, mail, calendar, GitHub, Hacker News, Reddit, arXiv, RSS feeds, weather, markets, and seismic feeds. Every item is scored for relevance, materiality, and novelty before it can enter a brief, and the run splits into two outcomes. Items that pass are raised in the brief, which says what changed and what needs attention. Items that do not pass go to a discard log, recorded rather than dropped, so the filter can be checked.](docs/what-gets-raised.svg)
+
+## What I stopped building
+
+I learned quickly to prioritize durability, utility, and productivity over novelty. The system is not a product, and it is not a research project. It is a tool I use every day, and it has to work when I'm not there or don't have the time to maintain it. I had originally built mobile and desktop clients to reach it, but they were more work than I could comfortably invest. I deleted them and now reach it from the tools (MCP, plugins, hooks) commonplace throughout AI development. It's been important to futureproof the system, and the design is intentionally service-agnostic so it can flex to whatever is best at the time.
 
 ## How a request is handled
 
@@ -35,7 +40,7 @@ Answers carry their sources, so a claim can be traced, and the cost of the call,
 
 The parts that accumulate stay on my server. The model is rented.
 
-![Where the data sits. What I connect, documents notes code and feeds, is ingested, de-duplicated, and screened for credentials and personal data, then held on my own server: the knowledge corpus, stored memory, tools, and the routing and spending limits. That material accumulates there and is exportable, deletable, and not used for training. Below it, across a labeled standard interface, is the rented model: the request goes out with context already loaded, and the answer returns with its sources and cost. Replacing the model is a configuration change, and nothing above it moves.](docs/who-owns-what.svg)
+![Where the data sits. What I connect, documents notes code and feeds, is ingested, de-duplicated, and screened for credentials and personal data, then held on my own server: the knowledge corpus, continuity graph, tools, and the routing and spending limits. That material accumulates there and is exportable, deletable, and not used for training. Below it, across a labeled standard interface, is the rented model: the request goes out with context already loaded, and the answer returns with its sources and cost. Replacing the model is a configuration change, and nothing above it moves.](docs/who-owns-what.svg)
 
 The model is the one part I do not control, so it is treated as replaceable. Substituting a better one is a configuration change.
 
@@ -43,11 +48,17 @@ What is stored is exportable and deletable, and is not used for training. Reques
 
 I hold what accumulates, I decide where requests go, and none of it becomes a vendor's asset.
 
+## Open source, and what I pay for
+
+Almost all of it is open source, assembled and run on my own server rather than rented as a service. Where an open-source equivalent did the job, I switched to it and kept the data. What I still pay for is the model, and one hosted memory service that stays swappable and is not the system of record.
+
 ## Building it
 
-I am an operator and systems architect by background, not a career software engineer. The architecture is mine: which components exist, how they connect, what each runs on, how it behaves when a part fails, and what it is allowed to spend. I built it AI-natively, specifying and reviewing while coding agents wrote most of the code.
+While computer science and software engineering have always been intriguing, I don't have any background developing code myself. The development of this system has been possible through working in partnership with the numerous tools and services currently available online. The architecture itself has all been created independently: which components exist, how they connect, what each runs on, how it behaves when a part fails, and what it is allowed to 'spend' (the budget for each module or platform). I built it AI-natively, specifying and reviewing while coding agents wrote most of the code.
 
-It has run since early 2026 and I use it daily. Most of what the technical sections describe came out of operating it rather than planning it. The fallback layer exists because the framework's own fallback setting turned out to do nothing. The model label on every answer exists because a cost-driven substitution degraded output silently before I traced it.
+It has run since early 2026 and I use it daily. Most of what the technical sections describe came out of operating it rather than planning it. For example, the fallback layer exists because the framework's own fallback setting turned out to do nothing. Another instance, the model label on every answer exists as a way to backtrace a behavioral regression to a model swap that was invisible in the logs. Most of the issues I hit in production were not bugs but design gaps, and it was only through operating the system that I discovered them. 
+
+Because I built Pacific Slate while working and going to grad school, my free time (or lack thereof) shaped the design more than anything else. It had to be useful in the hours I wasn't there: scheduled runs, low-risk dependencies and security updates that merge on their own, and failures that degrade to a working state rather than waiting for me.
 
 ---
 
@@ -145,6 +156,8 @@ Two speed tiers result: inline answers in a single model call, and delegated run
 <summary><strong>3 · Reliability and cost</strong> · the part that took the most iteration</summary>
 
 **It stays up, stays within budget, and checks its own output, and each of those mechanisms is observable.**
+
+Ninety days of traces as of August 2026: 13,053 runs, 26,515 model calls, nine models serving traffic. The median model call completes in 3.1 seconds; the 90th percentile is 14 seconds.
 
 **Cost control, applied before the call.** A deterministic scorer rates prompt complexity 1 to 5 from word count, keyword classes, code markers, role weight, and conversation depth, with no model involved. That score and current budget state select the tier:
 

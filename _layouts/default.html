@@ -32,8 +32,7 @@
     .copybox button{font-family:var(--mono);font-size:12.5px;color:var(--accent);background:transparent;
       border:1px solid var(--rule-strong);cursor:pointer;padding:3px 8px;line-height:1.4}
     .copybox button:hover{border-color:var(--accent)}
-    .copybox .cp-main{border-radius:6px 0 0 6px;border-right:0}
-    .copybox .cp-tog{border-radius:0 6px 6px 0;padding:3px 6px}
+    .copybox .cp-tog{border-radius:6px;padding:3px 8px}
     .copybox .menu{position:absolute;right:0;top:calc(100% + 6px);min-width:190px;z-index:20;
       background:var(--panel);border:1px solid var(--rule-strong);border-radius:8px;padding:5px;
       display:none;flex-direction:column}
@@ -98,13 +97,13 @@
         <a class="hide-sm" href="/demo/#monitor">monitor</a>
         <a class="hide-sm" href="https://github.com/pacific-slate/pacslate">source</a>
         <span class="copybox" id="copybox">
-          <button class="cp-main" id="cpCopy" title="Copy this page as Markdown">Copy&nbsp;page</button>
-          <button class="cp-tog" id="cpTog" aria-label="More options" aria-haspopup="true" aria-expanded="false">▾</button>
+          <button class="cp-tog" id="cpTog" title="This page is written to be read by AI tools" aria-haspopup="true" aria-expanded="false">Open&nbsp;with&nbsp;AI&nbsp;▾</button>
           <div class="menu">
-            <a href="#" id="mCopy">Copy as Markdown</a>
-            <a href="https://raw.githubusercontent.com/pacific-slate/pacslate/main/README.md" id="mOpen" target="_blank" rel="noopener">Open Markdown</a>
             <a href="#" id="mClaude" target="_blank" rel="noopener">Chat in Claude</a>
             <a href="#" id="mGPT" target="_blank" rel="noopener">Open in ChatGPT</a>
+            <a href="#" id="mCopy">Copy as Markdown</a>
+            <a href="https://raw.githubusercontent.com/pacific-slate/pacslate/main/README.md" id="mOpen" target="_blank" rel="noopener">Open raw Markdown</a>
+            <a href="/llms.txt" id="mLlms" target="_blank" rel="noopener">llms.txt</a>
           </div>
         </span>
       </span>
@@ -132,9 +131,9 @@
     })();
   </script>
   <script>
-    /* "Copy page" dropdown: hands this page to whatever AI / coding tool the
-       reader uses: copy as Markdown, open the raw Markdown, or open a chat with
-       the page prefilled. The page's primary reader is an AI; make that easy. */
+    /* "Open with AI" menu: hands this page to whatever AI / coding tool the
+       reader uses: open a chat with the page prefilled, copy as Markdown, or
+       open the raw source. The page's primary reader is an AI; make that easy. */
     (function(){
       var box=document.getElementById('copybox');
       if(!box)return;
@@ -170,9 +169,8 @@
           })
           .then(function(ok){flash(srcEl,ok?'Copied ✓':'Copy failed');if(!ok)window.open(RAW,'_blank','noopener');});
       }
-      var cpCopy=document.getElementById('cpCopy'), mCopy=document.getElementById('mCopy');
-      if(cpCopy) cpCopy.addEventListener('click',function(e){e.preventDefault();copyMd(cpCopy);});
-      if(mCopy) mCopy.addEventListener('click',function(e){e.preventDefault();copyMd(cpCopy);close();});
+      var mCopy=document.getElementById('mCopy');
+      if(mCopy) mCopy.addEventListener('click',function(e){e.preventDefault();copyMd(cpTog);close();});
       if(cpTog) cpTog.addEventListener('click',function(e){
         e.preventDefault();e.stopPropagation();
         var open=box.classList.toggle('open');

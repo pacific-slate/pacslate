@@ -1,0 +1,14 @@
+# Pacific Slate
+
+> Personal AI platform built and operated by Ryan Thompson: a self-hosted multi-agent system with its own memory, tool layer, cost governance, and fallback design. This site is the architecture writeup plus a static demo. It is a personal build at personal scale, not a product.
+
+## Content
+
+- [Page as Markdown](https://raw.githubusercontent.com/pacific-slate/pacslate/main/README.md): the full writeup, single source for the site.
+- [Fallback pattern](https://raw.githubusercontent.com/pacific-slate/pacslate/main/examples/model_fallback.py): the resilient-call pattern, simplified, reasoning in comments.
+- [Routing and budget config](https://raw.githubusercontent.com/pacific-slate/pacslate/main/examples/model-routing.example.yaml): the real config structure with illustrative model IDs.
+
+## Optional
+
+- [Live demo](https://pacslate.com/demo): the real interface on sample data, no backend.
+- Model names on the page are illustrative; the design is model-agnostic. Counts were checked against the running system in August 2026.

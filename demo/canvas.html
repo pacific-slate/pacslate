@@ -10,7 +10,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@200..800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js" integrity="sha384-qOkzR5Ke/XkQxuGVJ9hpFEpDlcoLtWwVYhnJf06cLIZa2vaIptSqaubivErzmD5O" crossorigin="anonymous"></script>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" },
+      "integrity": { "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js": "sha384-8/hf5tabFfIo0BPku31TKUvGIKpWGYaMwNtlSNqNyZzXgZCMd4lnOGWbJElML9dv" } }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    window.THREE = THREE;
+    window.dispatchEvent(new Event('three-ready'));
+  </script>
   <!-- Markdown rendering for response cards. marked + DOMPurify is the
        industry-standard pairing: marked tokenizes + serializes to HTML,
        DOMPurify scrubs anything risky before insertion. ~30KB total. -->
@@ -2179,7 +2187,10 @@
     })();
 
     // ====== WAVE — three.js wireframe terrain ======
-    (function () {
+    // three.js loads as a deferred ES module, so init waits for it. The
+    // displacement is f(x, y, t), so the wireframe is built once and only its
+    // z components are rewritten in place each frame (no per-frame allocation).
+    function initWave() {
       const canvasEl = document.getElementById('waveCanvas');
       const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -2190,28 +2201,26 @@
       camera.position.set(0, 4.5, 8);
       camera.lookAt(0, 0, 0);
 
-      const geom = new THREE.PlaneGeometry(40, 40, 80, 80);
-      const positions = geom.attributes.position;
-      const orig = positions.array.slice();
+      const plane = new THREE.PlaneGeometry(40, 40, 80, 80);
       const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
-      const wire = new THREE.LineSegments(new THREE.WireframeGeometry(geom), mat);
+      const wireGeom = new THREE.WireframeGeometry(plane);
+      plane.dispose();
+      const wpos = wireGeom.attributes.position;
+      const worig = wpos.array.slice();
+      const wire = new THREE.LineSegments(wireGeom, mat);
       wire.rotation.x = -Math.PI / 2;
       scene.add(wire);
 
       let t = 0;
       function loop() {
         t += 0.012;
-        for (let i = 0; i < positions.count; i++) {
-          const ox = orig[i * 3], oy = orig[i * 3 + 1];
-          const z = Math.sin(ox * 0.4 + t) * 0.6
+        for (let i = 0; i < wpos.count; i++) {
+          const ox = worig[i * 3], oy = worig[i * 3 + 1];
+          wpos.array[i * 3 + 2] = Math.sin(ox * 0.4 + t) * 0.6
                   + Math.cos(oy * 0.3 - t * 0.8) * 0.5
                   + Math.sin((ox + oy) * 0.2 + t * 0.5) * 0.4;
-          positions.array[i * 3 + 2] = z;
         }
-        positions.needsUpdate = true;
-        // rebuild wireframe geometry from updated plane
-        wire.geometry.dispose();
-        wire.geometry = new THREE.WireframeGeometry(geom);
+        wpos.needsUpdate = true;
         renderer.render(scene, camera);
         requestAnimationFrame(loop);
       }
@@ -2221,7 +2230,9 @@
         camera.updateProjectionMatrix();
         size();
       });
-    })();
+    }
+    if (window.THREE) initWave();
+    else window.addEventListener('three-ready', initWave, { once: true });
 
     // ====== SETTINGS PANEL TOGGLE ======
     const settingsToggle = document.getElementById('settingsToggle');
@@ -2684,7 +2695,8 @@
     // ====== SLASH ======
     const slashCommands = [
       { cmd: '/today', desc: 'plan the day' },
-      { cmd: '/brief', desc: 'research brief on a topic or account' },
+      { cmd: '/brief', desc: 'research brief on a topic or account (also /research)' },
+      { cmd: '/pipeline', desc: 'account status and next step' },
       { cmd: '/draft', desc: 'draft an email, message, or post' },
       { cmd: '/deal', desc: 'open a pipeline card' },
       { cmd: '/history', desc: 'open chat history' },
@@ -2824,23 +2836,28 @@
       state.cards.push(rec); focusCard(el);
       return el;
     }
+    // One shared window listener pair serves every card; the per-card version
+    // added two window listeners per spawn and never removed them.
+    let _activeDrag = null;
+    window.addEventListener('mousemove', e => {
+      if (!_activeDrag) return;
+      const d = _activeDrag;
+      d.el.style.left = (d.ox + e.clientX - d.sx) + 'px';
+      d.el.style.top  = (d.oy + e.clientY - d.sy) + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+      if (!_activeDrag) return;
+      const el = _activeDrag.el; _activeDrag = null;
+      el.classList.remove('dragging');
+      const rec = state.cards.find(c => c.el === el);
+      if (rec) { rec.x = parseFloat(el.style.left); rec.y = parseFloat(el.style.top); }
+    });
     function attachDrag(el, handle) {
-      let drag = false, sx = 0, sy = 0, ox = 0, oy = 0;
       handle.addEventListener('mousedown', e => {
         if (e.target.closest('.controls')) return;
-        drag = true; sx = e.clientX; sy = e.clientY;
-        ox = parseFloat(el.style.left); oy = parseFloat(el.style.top);
+        _activeDrag = { el, sx: e.clientX, sy: e.clientY,
+                        ox: parseFloat(el.style.left), oy: parseFloat(el.style.top) };
         el.classList.add('dragging'); focusCard(el); e.preventDefault();
-      });
-      window.addEventListener('mousemove', e => {
-        if (!drag) return;
-        el.style.left = (ox + e.clientX - sx) + 'px';
-        el.style.top  = (oy + e.clientY - sy) + 'px';
-      });
-      window.addEventListener('mouseup', () => {
-        if (!drag) return; drag = false; el.classList.remove('dragging');
-        const rec = state.cards.find(c => c.el === el);
-        if (rec) { rec.x = parseFloat(el.style.left); rec.y = parseFloat(el.style.top); }
       });
     }
 
@@ -3038,9 +3055,9 @@
     }
     function buildTodayCard(body) {
       const sections = [
-        { label: 'critical · 3', items: [['Review Acme account follow-up','needs owner',true],['Finish the strategy memo','due wed',true],['Host support callback','today',true]]},
-        { label: 'calendar', items: [['Weekly sync','09:00'],['Acme quarterly review','14:00'],['Dinner — Jordan','18:30']]},
-        { label: 'field of view', items: [['Atlas · 100+ seats · steady','7d'],['Beacon renewal · drifting','11d'],['Textbooks · 3 used copies under budget','today']]},
+        { label: 'critical · 3', items: [['Review Vandelay account follow-up','needs owner',true],['Finish the strategy memo','due wed',true],['Host support callback','today',true]]},
+        { label: 'calendar', items: [['Weekly sync','09:00'],['Vandelay quarterly review','14:00'],['Dinner — Jordan','18:30']]},
+        { label: 'field of view', items: [['Hooli · 100+ seats · steady','7d'],['Initech renewal · drifting','11d'],['Textbooks · 3 used copies under budget','today']]},
       ];
       sections.forEach(s => {
         const sec = document.createElement('div'); sec.className = 'today-section';
@@ -3061,7 +3078,7 @@
       const hero = document.createElement('div'); hero.className = 'hero';
       hero.style.background = gradient;
       const mono = document.createElement('div'); mono.className = 'monogram'; mono.textContent = monogram; hero.appendChild(mono);
-      const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = 'acme · cmo'; hero.appendChild(badge);
+      const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = 'vandelay · cmo'; hero.appendChild(badge);
       body.appendChild(hero);
       const n = document.createElement('div'); n.className = 'name'; n.textContent = name; body.appendChild(n);
       const r = document.createElement('div'); r.className = 'role'; r.textContent = role; body.appendChild(r);
@@ -3280,7 +3297,7 @@
         addTrace(stream.trace, 'reading calendar (3 events today)');
         await new Promise(r => setTimeout(r, 280));
         addTrace(stream.trace, 'reading task list');
-        await streamText(stream.live, 'Pulling your day. Three things matter most: Acme follow-up needs an owner, the strategy memo is due Wednesday, and Host is waiting on a callback. Acme review lands at 14:00.', 16);
+        await streamText(stream.live, 'Pulling your day. Three things matter most: Vandelay follow-up needs an owner, the strategy memo is due Wednesday, and Host is waiting on a callback. Vandelay review lands at 14:00.', 16);
         await new Promise(r => setTimeout(r, 250));
         replaceWithCard(stream, () => spawnCard({ kind:'today', label:(()=>{const d=new Date();return `today · ${['sun','mon','tue','wed','thu','fri','sat'][d.getDay()]} ${d.getDate()} ${['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][d.getMonth()]}`;})(), width:400, builder: buildTodayCard }));
       }
@@ -3288,25 +3305,25 @@
         addTrace(stream.trace, 'reading pipeline (crm · personal)');
         await new Promise(r => setTimeout(r, 250));
         addTrace(stream.trace, 'reading deal context');
-        await streamText(stream.live, 'Acme account · paid commercial · signed Q1. $60K ARR, annual term. Currently in execution prep.', 16);
+        await streamText(stream.live, 'Vandelay account · paid commercial · signed Q1. $60K ARR, annual term. Currently in execution prep.', 16);
         await new Promise(r => setTimeout(r, 250));
         replaceWithCard(stream, () => spawnCard({
-          kind:'deal', label:'deal · acme', width:380,
-          builder: (body) => buildDealCard(body, 'Acme account', '$60K',
+          kind:'deal', label:'deal · vandelay', width:380,
+          builder: (body) => buildDealCard(body, 'Vandelay account', '$60K',
             'annual · paid commercial · signed Q1',
             ['done','done','done','current','',''],
             'In execution prep. SOW countersign pending with the customer-side owner. Config locked. Next milestone: rollout schedule.')
         }));
       }
       else if (lower.startsWith('/pipeline')) {
-        addTrace(stream.trace, 'reading pipeline · beacon');
+        addTrace(stream.trace, 'reading pipeline · initech');
         await new Promise(r => setTimeout(r, 220));
         addTrace(stream.trace, 'reading account status');
-        await streamText(stream.live, 'Beacon account is drifting. Was warm-to-trial, last recap flagged pricing concerns.', 16);
+        await streamText(stream.live, 'Initech account is drifting. Was warm-to-trial, last recap flagged pricing concerns.', 16);
         await new Promise(r => setTimeout(r, 250));
         replaceWithCard(stream, () => spawnCard({
-          kind:'deal', label:'deal · beacon · drifting', width:380,
-          builder: (body) => buildDealCard(body, 'Beacon account', 'TBD',
+          kind:'deal', label:'deal · initech · drifting', width:380,
+          builder: (body) => buildDealCard(body, 'Initech account', 'TBD',
             'renewal discussion · drifting 11d',
             ['done','done','current','','',''],
             'Last recap: pricing concerns at the $48K range. Recommend a short status check-in.')
@@ -3325,7 +3342,6 @@
             [
               'Hope the week\'s been good. Wanted to circle back on the SOW — the only piece outstanding is the pricing line we left at $58K.',
               'Happy to lock that in as is, or hop on 10 minutes Tuesday morning if you want to walk through the structure once. Either way — no rush, just want to keep things moving.',
-              'Best,\nRyan',
             ])
         }));
       }

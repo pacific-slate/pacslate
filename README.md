@@ -44,7 +44,7 @@ The parts that accumulate stay on my server. The model is rented.
 
 The model is the one part I do not control, so it is treated as replaceable. Substituting a better one is a configuration change.
 
-What is stored is exportable and deletable, and is not used for training. Requests that go out reach only providers configured not to train on them or publish them ([account settings](docs/openrouter-privacy.png), June 2026). Where nothing should leave the server, work can be pointed at a model running on it.
+What is stored is exportable and deletable, and is not used for training. Requests that go out are restricted to zero-data-retention endpoints, at providers configured not to train on them or publish them ([account settings](docs/openrouter-privacy.png), August 2026). Where nothing should leave the server, work can be pointed at a model running on it.
 
 I hold what accumulates, I decide where requests go, and none of it becomes a vendor's asset.
 
